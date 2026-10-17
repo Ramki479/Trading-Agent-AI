@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Paper Trader — Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>📈</text></svg>" />
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="logo">PAPER&nbsp;TRADING</span>
+      <span id="mode-badge" class="badge">paper</span>
+    </div>
+    <div class="status-area">
+      <div id="conn" class="conn offline">🔴 Ubuntu API Offline</div>
+      <div id="status-line" class="status-line">waiting…</div>
+      <div id="fx-line" class="fx-line"></div>
+    </div>
+  </header>
+
+  <main>
+    <div id="halt-banner" class="halt-banner hidden"></div>
+
+    <!-- Summary cards -->
+    <section class="cards" id="cards"><!-- injected --></section>
+
+    <!-- Connection + agent status -->
+    <section class="panel live-panel">
+      <div class="panel-title">LIVE STATUS</div>
+      <div class="live-grid" id="live-grid"><!-- injected --></div>
+    </section>
+
+    <div class="two-col">
+      <!-- System status -->
+      <section class="panel">
+        <div class="panel-title">SYSTEM STATUS</div>
+        <div class="sys-grid" id="sys-grid"><!-- injected --></div>
+      </section>
+
+      <!-- Price sources -->
+      <section class="panel">
+        <div class="panel-title">PRICE SOURCES</div>
+        <div class="sources-wrap" id="sources-wrap"><!-- injected --></div>
+      </section>
+    </div>
+
+    <!-- Adaptive intelligence (Circuit-style, read-only) -->
+    <section class="panel">
+      <div class="panel-title">ADAPTIVE INTELLIGENCE</div>
+      <div class="adaptive-grid" id="adaptive-grid"><!-- injected --></div>
+      <div class="adaptive-sub" id="adaptive-sub"><!-- injected --></div>
+    </section>
+
+    <!-- Price integrity (read-only diagnostics) -->
+    <section class="panel">
+      <div class="panel-title">PRICE INTEGRITY</div>
+      <div class="adaptive-grid" id="integrity-grid"><!-- injected --></div>
+      <div class="adaptive-sub" id="integrity-sub"><!-- injected --></div>
+    </section>
+
+    <!-- TradingAgents intelligence (read-only research) -->
+    <section class="panel">
+      <div class="panel-title">TRADINGAGENTS INTELLIGENCE</div>
+      <div class="adaptive-grid" id="ta-grid"><!-- injected --></div>
+      <div class="adaptive-sub" id="ta-sub"><!-- injected --></div>
+    </section>
+
+    <!-- ATLAS intelligence (read-only research-grade) -->
+    <section class="panel">
+      <div class="panel-title">ATLAS INTELLIGENCE</div>
+      <div class="adaptive-grid" id="atlas-grid"><!-- injected --></div>
+      <div class="adaptive-sub" id="atlas-sub"><!-- injected --></div>
+    </section>
+
+    <!-- ATLAS Agent Scorecard -->
+    <section class="panel">
+      <div class="panel-title">ATLAS AGENT SCORECARD</div>
+      <div class="table-wrap" id="atlas-scorecard-wrap"><!-- injected --></div>
+    </section>
+
+    <!-- ATLAS Calibration -->
+    <section class="panel">
+      <div class="panel-title">ATLAS CALIBRATION</div>
+      <div class="table-wrap" id="atlas-calibration-wrap"><!-- injected --></div>
+    </section>
+
+    <!-- ATLAS A/B Paper -->
+    <section class="panel">
+      <div class="panel-title">ATLAS A/B PAPER COMPARISON</div>
+      <div class="adaptive-grid" id="atlas-ab-grid"><!-- injected --></div>
+    </section>
+
+    <!-- Current candidates -->
+    <section class="panel">
+      <div class="panel-title">
+        CURRENT CANDIDATES
+        <span id="cand-meta" class="panel-sub"></span>
+      </div>
+      <div class="table-wrap" id="candidates-wrap"></div>
+    </section>
+
+    <!-- Last errors -->
+    <section class="panel">
+      <div class="panel-title">LAST ERRORS</div>
+      <div class="errors-wrap" id="errors-wrap"></div>
+    </section>
+
+    <div class="two-col">
+      <!-- Open positions -->
+      <section class="panel">
+        <div class="panel-title">OPEN POSITIONS</div>
+        <div class="table-wrap" id="positions-wrap"></div>
+      </section>
+
+      <!-- Trade history -->
+      <section class="panel">
+        <div class="panel-title">
+          TRADE HISTORY
+          <span class="filter-group" id="side-filter">
+            <button data-side="ALL" class="active">All</button>
+            <button data-side="BUY">Buys</button>
+            <button data-side="SELL">Sells</button>
+          </span>
+        </div>
+        <div class="table-wrap" id="trades-wrap"></div>
+      </section>
+    </div>
+
+    <div class="two-col">
+      <!-- Equity curve -->
+      <section class="panel">
+        <div class="panel-title">EQUITY CURVE (₹ · observed, real conversion)</div>
+        <div class="chart-wrap">
+          <canvas id="equity-chart"></canvas>
+          <div id="chart-empty" class="chart-empty hidden"></div>
+        </div>
+      </section>
+
+      <!-- Performance -->
+      <section class="panel">
+        <div class="panel-title">PERFORMANCE</div>
+        <div class="perf-grid" id="perf-grid"><!-- injected --></div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    Read-only dashboard · data served by the paper-trader API · no wallet · no real trading
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

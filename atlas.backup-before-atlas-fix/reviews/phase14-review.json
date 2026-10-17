@@ -1,0 +1,14 @@
+{
+  "reviewId": "PH14-B858ECF22059",
+  "humanReview": {
+    "recommendation": "CONTINUE_SHADOW",
+    "whatWeKnow": "No data available.",
+    "limitations": "Insufficient observations for any analysis."
+  },
+  "robustness": {
+    "status": "INSUFFICIENT_EVIDENCE",
+    "issues": [
+      "NO_DATA"
+    ]
+  }
+}

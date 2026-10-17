@@ -1,0 +1,20 @@
+{
+  "reviewId": "PH14-B858ECF22059",
+  "phase": 14,
+  "status": "INSUFFICIENT_EVIDENCE",
+  "evidenceClassification": "INSUFFICIENT_EVIDENCE",
+  "robustness": {
+    "status": "INSUFFICIENT_EVIDENCE",
+    "issues": [
+      "NO_DATA"
+    ]
+  },
+  "sampleCount": 0,
+  "humanDecisionRequired": true,
+  "automaticPromotion": false,
+  "humanReview": {
+    "recommendation": "CONTINUE_SHADOW",
+    "whatWeKnow": "No data available.",
+    "limitations": "Insufficient observations for any analysis."
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "reviewId": "REV-V1",
+  "checkpoint": 30,
+  "analysisVersion": "1.0.0",
+  "datasetHash": "PENDING",
+  "codeVersion": "ATLAS-0.2.0",
+  "methodologyVersion": "1.0.0",
+  "sampleCount": 8,
+  "createdAt": 1788780316756,
+  "iso": "2026-09-07T11:25:16.756Z",
+  "evidenceClassification": "INSUFFICIENT_EVIDENCE",
+  "evidenceState": "INSUFFICIENT_SAMPLE",
+  "reconciliation": {
+    "predictions": 8,
+    "resolved": 8,
+    "unresolved": 0,
+    "excluded": 0,
+    "matched": 8
+  },
+  "horizons": {
+    "5m": {
+      "status": "INSUFFICIENT_SAMPLE",
+      "n": 0
+    },
+    "15m": {
+      "status": "INSUFFICIENT_SAMPLE",
+      "n": 0
+    },
+    "30m": {
+      "status": "INSUFFICIENT_SAMPLE",
+      "n": 0
+    },
+    "1h": {
+      "status": "INSUFFICIENT_SAMPLE",
+      "n": 0
+    },
+    "4h": {
+      "status": "INSUFFICIENT_SAMPLE",
+      "n": 0
+    }
+  },
+  "primaryMetric": {
+    "status": "INSUFFICIENT_SAMPLE",
+    "n": 0
+  },
+  "calibration": {
+    "50-59%": {
+      "sample": 0,
+      "meanConfidence": null,
+      "accuracy": null,
+      "meanReturn": null,
+      "sumReturn": 0,
+      "label": "50-59%"
+    },
+    "60-69%": {
+      "sample": 0,
+      "meanConfidence": null,
+      "accuracy": null,
+      "meanReturn": null,
+      "sumReturn": 0,
+      "label": "60-69%"
+    },
+    "70-79%": {
+      "sample": 0,
+      "meanConfidence": null,
+      "accuracy": null,
+      "meanReturn": null,
+      "sumReturn": 0,
+      "label": "70-79%"
+    },
+    "80-89%": {
+      "sample": 0,
+      "meanConfidence": null,
+      "accuracy": null,
+      "meanReturn": null,
+      "sumReturn": 0,
+      "label": "80-89%"
+    },
+    "90-100%": {
+      "sample": 0,
+      "meanConfidence": null,
+      "accuracy": null,
+      "meanReturn": null,
+      "sumReturn": 0,
+      "label": "90-100%"
+    }
+  },
+  "dataQuality": {
+    "valid": 8,
+    "excluded": 0
+  },
+  "lookAheadViolations": 0,
+  "duplicateViolations": 0,
+  "selectionBias": {
+    "status": "ANALYZING",
+    "discovered": 8,
+    "evaluated": 8
+  },
+  "survivorship": {
+    "status": "ANALYZING",
+    "resolved": 8,
+    "unresolved": 0,
+    "excluded": 0
+  },
+  "recommendation": "CONTINUE_SHADOW_COLLECTION",
+  "humanReview": {
+    "whatWeKnow": "We have 8 matched observations. See horizon analysis for detailed results.",
+    "whatWeDontKnow": "Effect stability over time, regime-specific performance, agent drift over time, selection bias details.",
+    "dataQuality": "Matched: 8, Excluded: 0",
+    "primaryResult": "Primary metric: 30m paired difference = N/A",
+    "secondaryResults": "See horizon analysis for 5m, 15m, 1h, 4h results.",
+    "importantLimitations": "n=8. Do not interpret as predictive. Statistical significance ≠ trading usefulness.",
+    "biasRisks": "Selection bias, survivorship bias, temporal drift. See selection and survivorship audit.",
+    "recommendation": "CONTINUE SHADOW COLLECTION"
+  }
+}

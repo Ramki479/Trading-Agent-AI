@@ -1,0 +1,72 @@
+{
+  "status": "BLOCKED",
+  "passedCount": 4,
+  "totalCount": 11,
+  "checks": {
+    "executionSafety": {
+      "status": "NOT_ASSESSED",
+      "passed": false,
+      "note": "No execution safety audit implemented for live trading"
+    },
+    "rollbackMechanism": {
+      "status": "NOT_ASSESSED",
+      "passed": false,
+      "note": "No rollback mechanism verified"
+    },
+    "monitoring": {
+      "status": "NOT_ASSESSED",
+      "passed": false,
+      "note": "No production monitoring verified"
+    },
+    "alerting": {
+      "status": "NOT_ASSESSED",
+      "passed": false,
+      "note": "No production alerting verified"
+    },
+    "auditLogs": {
+      "status": "NOT_ASSESSED",
+      "passed": false,
+      "note": "No production audit log verification"
+    },
+    "configImmutability": {
+      "status": "NOT_ASSESSED",
+      "passed": false,
+      "note": "No configuration immutability verification"
+    },
+    "killSwitch": {
+      "status": "PASS",
+      "passed": true,
+      "note": "ATLAS mode can be set to SHADOW (already is)."
+    },
+    "paperLiveSeparation": {
+      "status": "PASS",
+      "passed": true,
+      "note": "System is paper-only. No live execution exists."
+    },
+    "walletIsolation": {
+      "status": "PASS",
+      "passed": true,
+      "note": "No wallet access in paper system."
+    },
+    "transactionControls": {
+      "status": "PASS",
+      "passed": true,
+      "note": "No transactions in paper system."
+    },
+    "operationalRecovery": {
+      "status": "NOT_ASSESSED",
+      "passed": false,
+      "note": "Operational recovery not verified"
+    }
+  },
+  "blockingReasons": [
+    "executionSafety: No execution safety audit implemented for live trading",
+    "rollbackMechanism: No rollback mechanism verified",
+    "monitoring: No production monitoring verified",
+    "alerting: No production alerting verified",
+    "auditLogs: No production audit log verification",
+    "configImmutability: No configuration immutability verification",
+    "operationalRecovery: Operational recovery not verified"
+  ],
+  "note": "Production readiness is SEPARATE from evidence classification. Even ROBUST evidence does NOT automatically enable production."
+}

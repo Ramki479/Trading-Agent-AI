@@ -1,0 +1,436 @@
+=== REAL-MARKET SOLANA PAPER TRADER — TEST SUITE ===
+
+[test 0] unit gates — prices, 5m recovery, score, divergence, discovery extraction
+  ✓ valid base58 mint accepted
+  ✓ mint with 0/O/I/l rejected
+  ✓ short address rejected
+  ✓ null/undefined rejected
+  ✓ gecko relationship id → real mint
+  ✓ gecko non-solana id rejected
+  ✓ gecko missing/empty id rejected
+  ✓ dex solana profile entry → real mint
+  ✓ dex non-solana profile entry rejected
+  ✓ dex profile missing address rejected
+  ✓ gecko pools body → deduped real mints only
+  ✓ gecko pools non-array body → empty
+  ✓ fresh valid price passes gate
+  ✓ zero price → unavailable
+  ✓ null price → unavailable
+  ✓ stale price rejected
+  ✓ priceAgeMs computed
+  ✓ 35% divergence rejected
+  ✓ small divergence accepted
+  ✓ strong candidate scores >= 60
+  ✓ warming/no-liquidity candidate scores < 60
+  ✓ flat history → ~0% recovery, valid
+  ✓ too few samples → warming
+  ✓ rising history → positive recovery
+  ✓ young history (no ~2s baseline) → warming
+
+[test 1] startup + persistence
+  ✓ state files created
+  ✓ starting capital 10
+  ✓ cash starts at 10
+  ✓ paper account fields
+  ✓ portfolio has cooldowns map
+  ✓ meta: no wallet, no signer
+  ✓ default trade size 0.05 SOL
+  ✓ config paperTrading forced true
+  ✓ heartbeat paper+custody
+  ✓ heartbeat market=REAL SOLANA
+  ✓ heartbeat wallet/broadcast disabled
+  ✓ heartbeat maxPositions=5
+  ✓ startup banner printed
+  ✓ lock acquired
+  ✓ market data provider initialized
+  ✓ paper-only startup lines
+  ✓ no fake random prices
+  ✓ clean exit code 0
+  ✓ lock released on shutdown
+  ✓ heartbeat state=stopped
+
+[test 2] 5m WARMING gate → BUY → TAKE-PROFIT + P&L
+  ✓ no BUY before history warmed
+  ✓ scan reports 5m=warming(N samples)
+  ✓ filter logged during warm-up
+  ✓ paper BUY executed after warm-up
+  ✓ BUY has real mint
+  ✓ BUY quantity = size / priceSol
+  ✓ BUY valueSol = 0.05
+  ✓ BUY source recorded
+  ✓ cash debited 0.05
+  ✓ one open position
+  ✓ position carries SOL+USD prices
+  ✓ position invested = trade size
+  ✓ SELL executed (take-profit)
+  ✓ sell reason = take-profit
+  ✓ realized P&L positive
+  ✓ realized P&L pct ≈ +8..+12%
+  ✓ sell credited exit value to cash
+  ✓ no open positions after sell
+  ✓ cash = 10 + realized
+  ✓ equity = cash (flat)
+  ✓ totalPnl = realizedPnl (flat)
+  ✓ pnlPct matches accounting
+  ✓ stats: 1 trade, 1 win, winRate 100
+  ✓ avgWin/best = realized
+  ✓ equity history recorded
+  ✓ clean exit
+
+[test 3] STOP-LOSS
+  ✓ BUY fired
+  ✓ SELL fired
+  ✓ reason = stop-loss
+  ✓ realized P&L negative
+  ✓ realized pct ≈ -6..-12%
+  ✓ stats: 1 loss
+  ✓ worst trade recorded
+  ✓ cooldown set after sell
+
+[test 4] restart recovery
+  ✓ first run completed a trade cycle
+  ✓ first run exited cleanly
+  ✓ restart loaded existing portfolio
+  ✓ account initialized only once across restarts
+  ✓ starting capital preserved
+  ✓ cash preserved
+  ✓ realized P&L preserved
+  ✓ positions preserved
+  ✓ trade count preserved
+  ✓ ledger not erased
+  ✓ equity history not re-seeded on restart
+  ✓ equity history preserved append-only
+  ✓ cooldowns persisted across restart
+  ✓ second run exited cleanly
+
+[test 5] re-entry cooldown blocks then expires
+  ✓ first BUY
+  ✓ take-profit SELL fired
+  ✓ re-entry cooldown filter logged
+  ✓ no second BUY during cooldown
+  ✓ cooldown timestamp persisted > now
+  ✓ second BUY after cooldown expiry
+  ✓ second BUY waited out the cooldown
+  ✓ clean exit
+
+[test 6] invalid / stale prices → NO TRADE
+  ✓ valid token still traded
+  ✓ poisoned tokens filtered pre-trade
+  ✓ no BUY for bad tokens
+  ✓ agent still running
+
+[test 7] provider failure — per-token and total outage
+  ✓ healthy token traded despite one bad token
+  ✓ sampler skipped the failed token
+  ✓ no BUY for failed token
+  ✓ agent alive after per-token failure
+  ✓ clean exit
+  ✓ discovery failure logged
+  ✓ history failure logged
+  ✓ heartbeat still running during outage
+  ✓ no trades during outage
+  ✓ agent exited cleanly after outage
+
+[test 8] concurrent sampler over a 40-token universe
+  ✓ sampler completed multiple cycles
+  ✓ sampler recorded the healthy tokens (30 samples)
+  ✓ failed tokens skipped, not fatal
+  ✓ agent alive
+  ✓ clean exit
+
+[test 9] process lock prevents duplicate agents
+  ✓ second instance refused to start
+  ✓ second instance logged the conflict
+  ✓ first instance still alive
+  ✓ first instance exits cleanly
+
+[test 10] graceful shutdown
+  ✓ exited with code 0
+  ✓ heartbeat state=stopped
+  ✓ lock released
+  ✓ shutdown line logged
+
+[test 11] INR FX display layer (fx.js)
+  ✓ inrPerSol = solUsd × usdInr
+  ✓ SOL→INR equals USD→INR for the same value
+  ✓ 10 SOL converts to ₹97,848.90
+  ✓ invalid rates → null (never fabricate)
+  ✓ ₹1,234.56
+  ✓ ₹1,00,000.00
+  ✓ negative → ₹-83.50
+  ✓ signed → +₹4.30
+  ✓ grouping 1234567 → 12,34,567
+  ✓ fallback source used when primary fails
+  ✓ primary tried before fallback
+  ✓ primary source parses correctly
+  ✓ third host (frankfurter.dev) used when first two fail
+  ✓ live outage → cached last valid rate kept
+  ✓ outage recorded as lastError
+  ✓ live refresh not flagged cached
+  ✓ rate persisted to cache file
+  ✓ total outage without cache → null (never fake)
+  ✓ failed refresh retried at failureRetryMs (not refreshMs)
+
+[test 12] adaptive units — perf analyzer, regime, gates, policy, experiments, reflection, llm, health
+  ✓ metrics: win rate 75%
+  ✓ metrics: 3 wins 1 loss
+  ✓ metrics: expectancy > 0
+  ✓ metrics: profit factor = 24/6 = 4
+  ✓ metrics: win streak 2 (W,W,L,W), current +1
+  ✓ metrics: loss streak 3
+  ✓ metrics: drawdown % capped at 100 without starting capital
+  ✓ metrics: drawdown % sane with starting capital 10
+  ✓ pairTrades: 2 closed + 1 open
+  ✓ pairTrades: closed trade carries entry metadata
+  ✓ timeOfDay buckets valid
+  ✓ liqClassOf: 150k→high, 30k→medium, 5k→low
+  ✓ regime: no trades → UNKNOWN
+  ✓ regime: <5 trades → UNKNOWN
+  ✓ regime: 7/7 wins → bull
+  ✓ regime: 0/8 wins → dump
+  ✓ regime: 29% WR negative avg → recovery
+  ✓ regime: recovery strategy → watchOnly 0 buys
+  ✓ regime: bull strategy → active full cap
+  ✓ regime sizing: dump→0, recovery→0.5, bull→1.0, UNKNOWN→1.0
+  ✓ regime sizing: never above 1 by default
+  ✓ learned-gates: cluster learned (n=10)
+  ✓ learned-gates: minScore raised for losing cluster
+  ✓ learned-gates: gate value within bounds
+  ✓ learned-gates: n < minSamples → INSUFFICIENT_DATA, no proposals
+  ✓ learned-gates: promoted gate applied
+  ✓ learned-gates: low confidence ignored → V1
+  ✓ learned-gates: max5m can only tighten
+  ✓ learned-gates: looser value refused → V1
+  ✓ policy: 3 consecutive losses → watchOnly
+  ✓ policy: negative expectancy raises minScore (never below 60)
+  ✓ policy: UNKNOWN → V1 active 60
+  ✓ policy: saved with expiresAt TTL
+  ✓ policy: effective gates fresh
+  ✓ policy: expired → V1 fallback
+  ✓ policy: minScore clamp ceiling 90
+  ✓ exp: created PROPOSED
+  ✓ exp: backtest passed → SHADOW
+  ✓ exp: shadow passed → PENDING_APPROVAL (autoApply off)
+  ✓ exp: approved → PROMOTED
+  ✓ exp: new strategy version created with parent
+  ✓ exp: effective baseline upgraded
+  ✓ exp: policy change logged for grading
+  ✓ exp: backtest failed → REJECTED
+  ✓ exp: state survives reload from jsonl
+  ✓ exp: rollback → ROLLED_BACK
+  ✓ exp: rollback restores parent version
+  ✓ reflect: 67%→100% WR → STRONGLY_POSITIVE
+  ✓ reflect: collapse → STRONGLY_NEGATIVE
+  ✓ reflect: tiny sample → INSUFFICIENT_DATA
+  ✓ reflect: change with no after-trades → INSUFFICIENT_DATA
+  ✓ reflect: back-dated change graded from after-window trades
+  ✓ reflect: grade persisted back into log
+  ✓ reflect: repeat-failure memory
+  ✓ reflect: lessons generated (exit-reason + streak + regime)
+  ✓ llm: valid output accepted
+  ✓ llm: invalid mode dropped, valid fields kept + error recorded
+  ✓ llm: out-of-bounds clamped (minScore 90, maxBuys 3)
+  ✓ llm: clamp logged as error
+  ✓ llm: forbidden field rejected (wallet)
+  ✓ llm: forbidden field rejected (signerKey)
+  ✓ llm: forbidden field rejected (broadcastTx)
+  ✓ llm: forbidden field rejected (execute)
+  ✓ llm: forbidden field rejected (code)
+  ✓ llm: forbidden field rejected (installPackage)
+  ✓ llm: non-object rejected
+  ✓ llm: extractJson strips fences
+  ✓ llm: extractJson garbage → null
+  ✓ health: healthy → 100, no gate, 1.0×
+  ✓ health: bad sources + stale SOL + failures → gated
+  ✓ health: no data → fail-open healthy
+
+[test 13] agent-loop + reflection cycles
+  ✓ agent-loop wrote adaptive-policy.json (mode/minScore/regime/expiry)
+  ✓ policy fields bounded
+  ✓ policy strategyVersion present
+  ✓ [AGENT-LOOP] logged with mode/regime
+  ✓ [REFLECT] logged
+  ✓ regime-state.json written
+  ✓ heartbeat adaptive block present
+  ✓ heartbeat adaptive regime + mode
+  ✓ heartbeat adaptive schedule timestamps
+  ✓ adaptive startup line logged
+  ✓ paper-only invariant intact
+  ✓ clean exit
+
+[test 14] dump regime → watchOnly blocks new entries
+  ✓ regime detected as dump from 8 pre-seeded losses
+  ✓ session policy went watchOnly (maxBuys 0)
+  ✓ watchOnly policy maxBuys = 0
+  ✓ no new BUY after watchOnly policy
+  ✓ clean exit
+
+[test 15] reflection proposes experiments → approvals + versions
+  ✓ experiments.jsonl created by reflection
+  ✓ approvals.jsonl has pending approval(s)
+  ✓ experiments proposed
+  ✓ experiment lifecycle moved out of PROPOSED (backtest ran)
+  ✓ shadow-trades.jsonl or backtest recorded
+  ✓ lessons.jsonl written
+  ✓ heartbeat shows experiments summary
+  ✓ clean exit
+
+[test 16] adaptive state survives restart
+  ✓ first run wrote adaptive policy
+  ✓ first run exited cleanly
+  ✓ restart loaded adaptive layer
+  ✓ policy lastAgentLoopAt preserved across restart
+  ✓ regime-state.json preserved
+  ✓ second run exited cleanly
+
+[test 17] LLM unavailable → deterministic policy fallback
+  ✓ LLM failure → deterministic fallback (no crash)
+  ✓ deterministic policy persisted
+  ✓ agent still running after LLM failure
+  ✓ clean exit
+
+[test 18] 40+ token sampler with adaptive layer enabled
+  ✓ sampler completed cycles with adaptive on (50-token universe)
+  ✓ healthy tokens sampled (n=35)
+  ✓ failed tokens isolated, not fatal
+  ✓ adaptive policy written during 50-token run
+  ✓ agent alive with adaptive processing
+  ✓ clean exit
+
+[test 19] price integrity — unit gates + ZCAT regression
+  ✓ 1. normal price update accepted
+  ✓ 2. same mint + same pair + valid price accepted
+  ✓ 2b. accepted price recorded as the last valid price
+  ✓ 3. same mint + changed pair rejected (PAIR_CHANGED)
+  ✓ 3b. position price untouched (no sell on the new pair)
+  ✓ 3c. still rejected on repeated observation
+  ✓ 3d. pair change counted + logged once
+  ✓ integrity state writes only its own file
+  ✓ 4. invalid USD price rejected
+  ✓ 5. invalid SOL price rejected
+  ✓ 6. stale price rejected (freshness policy)
+  ✓ 6b. validateMarketObservation enforces maxAgeMs
+  ✓ 7. cross-source divergence beyond threshold rejected
+  ✓ 7b. divergence event counted
+  ✓ 7c. comparePriceSources wraps existing threshold
+  ✓ 8. first extreme print flagged, NOT applied
+  ✓ 8b. second print waiting for confirmation
+  ✓ 8c. sustained move accepted after confirmation
+  ✓ 8d. position price eventually reached the new level (recognized)
+  ✓ 8e. sustained crash would reach SL (-99.96% <= -6%)
+  ✓ 8f. quarantine cleared after acceptance
+  ✓ 9. anomaly print flagged suspicious (no apply)
+  ✓ 9b. no SELL from the anomaly (-99.96% never reached SL logic)
+  ✓ 9c. next normal print snaps back → accepted, no sell
+  ✓ 9d. quarantine resolved without a trade
+  ✓ 10. gradual -6% walk: every observation accepted (SL intact)
+  ✓ 10b. last valid step crosses -6% stop-loss
+  ✓ 11. gradual +9% walk: every observation accepted (TP intact)
+  ✓ 11b. last valid step crosses +8% take-profit
+  ✓ 12. integrity module contains no recovery/exit strategy logic
+  ✓ 13. strategy constants unchanged (SL -6 / TP +8 / MAX 5 / score 60 / 1h band)
+  ✓ 14. restart reloads integrity state
+  ✓ 14b. quarantine continues across restart → confirmation completes
+  ✓ 15. price-integrity.js has no signing/wallet/random code
+  ✓ ZCAT-A: ₹2.08 print on a changed pair → rejected (no sell, no P&L)
+  ✓ ZCAT-A: ledger-equivalent state untouched (no realized loss)
+  ✓ ZCAT-B: single ₹2.08 observation never accepted → NO SELL, no -99.96% realized P&L
+  ✓ ZCAT-B: no quarantine left behind
+  ✓ ZCAT-C: legitimate crash confirmed by 3 prints → eventually accepted & SL reached
+
+[test 20] price integrity — single anomalous print → no catastrophic SELL
+  ✓ ZCAT bought normally
+  ✓ no SELL fired from the single anomalous print
+  ✓ legitimate take-profit SELL still fires
+  ✓ only one SELL, reason take-profit
+  ✓ realized P&L ≈ +8..+12% (TP unchanged, no -99.96% anywhere)
+  ✓ no stop-loss / catastrophic row in the ledger
+  ✓ paper account intact (1 round-trip, positive realized)
+  ✓ heartbeat reports paper+integrity layer
+  ✓ clean exit
+
+[test 21] TradingAgents — analysts, modes, LLM safety, prediction accuracy
+  ✓ technical: steady recovery → bullish with confidence
+  ✓ technical: schema fields + dataQuality ok
+  ✓ technical: WARMING → neutral, withheld, insufficient_history
+  ✓ technical: wild volatility + negative recovery → bearish
+  ✓ technical: no hallucinated numbers (all finite 0..100)
+  ✓ quant: positive history → expectedDirection up
+  ✓ quant: <5 trades → insufficient_history, flat, confidence 0
+  ✓ quant: losing window → expectedDirection down
+  ✓ sentiment: real activity signals → bullish
+  ✓ sentiment: warming → unknown, confidence 0 (no fabrication)
+  ✓ sentiment: no activity data → unknown
+  ✓ sentiment: reasoning admits no news/social source
+  ✓ market: dump regime reported with low health
+  ✓ market: no data → unknown, health 0 (never invented)
+  ✓ bull: strong supportive inputs → case + confidence
+  ✓ bull: no evidence → confidence 0, case not fabricated
+  ✓ bear: integrity + liquidity + regime risks → warnings + high riskScore
+  ✓ bear: riskScore bounded 0..100
+  ✓ bear: benign candidate → low risk
+  ✓ risk: critical when everything is bad
+  ✓ risk: benign → low
+  ✓ synth: strong research → BUY, researchScore >= 70
+  ✓ synth: researchScore separate from circuitScore (67 untouched)
+  ✓ synth: heavy bear risk → AVOID even with circuit score 71
+  ✓ synth: integrity suspicious → capped HOLD, no BUY
+  ✓ synth: component scores present (technical/quant/sentiment/market/bull/bearRisk)
+  ✓ prediction: BUY + win → correct
+  ✓ prediction: AVOID + loss → correct
+  ✓ prediction: AVOID + win → incorrect (bearish wrong when market rises)
+  ✓ prediction: HOLD expresses no direction → not counted
+  ✓ prediction: agent-level calls evaluated independently
+  ✓ prediction: mixed agents on a loss → some correct (bearish/regime) some incorrect (bullish)
+  ✓ layer: SHADOW enabled
+  ✓ layer: runCycle produced a candidate row
+  ✓ layer: row carries all agent outputs + research score + integrity dataQuality
+  ✓ layer: no NaN/Infinity anywhere in the research row
+  ✓ layer: commit wrote tradingagents-decisions.jsonl
+  ✓ layer: decision row persisted with circuit/final decision
+  ✓ layer: snapshot exposes latest + counters
+  ✓ layer: cache suppresses repeat research within TTL
+  ✓ prediction: BUY + win recorded as correct
+  ✓ prediction: totals 1 correct / accuracy 100%
+  ✓ prediction: AVOID + win recorded as incorrect (bearish wrong)
+  ✓ prediction: per-agent technical accuracy tracked (2 calls: 1 right, 1 wrong)
+  ✓ prediction: accuracy persists across restart
+  ✓ layer: OFF disabled
+  ✓ layer: OFF runCycle returns nothing
+  ✓ layer: OFF writes no decisions file
+  ✓ layer: OFF recordTradeOutcome is a no-op
+  ✓ layer: ADVISORY mode accepted
+  ✓ layer: analyst failure isolated (other agents continue, no crash)
+  ✓ layer: all analysts failing → safe fallback row, no throw
+  ✓ layer: failed-agent counter incremented
+  ✓ integrity: research reports dataQuality suspicious for a quarantined mint
+  ✓ integrity: research recommendation capped (no BUY on suspicious data)
+  ✓ integrity: bear researcher raises price_integrity_warning + PAIR_CHANGED
+  ✓ nodata: row produced with neutral/unknowns (nothing invented)
+  ✓ nodata: synthesizer holds (HOLD/AVOID) on missing evidence
+  ✓ llm: valid JSON accepted
+  ✓ llm: malformed JSON rejected
+  ✓ llm: forbidden field rejected
+  ✓ llm: schema validation enforced
+  ✓ llm: timeout fails safely
+  ✓ llm: transport failure fails safely (never crashes)
+  ✓ llm: no URL → null
+  ✓ layer: LLM dead → narrative null, research intact
+  ✓ agents: technical/quant/sentiment/bear all export analyze
+
+[test 22] TradingAgents SHADOW — agent smoke (Circuit execution unchanged)
+  ✓ agent: BUY still executes in SHADOW
+  ✓ agent: candidate research decision logged
+  ✓ agent: heartbeat reports TradingAgents enabled (SHADOW)
+  ✓ agent: decision has researchScore + circuitScore + mode SHADOW
+  ✓ agent: research is separate — decision row never gates (finalDecision attached)
+  ✓ agent: take-profit SELL still fires unchanged
+  ✓ agent: realized P&L ≈ +8..12% (TP untouched)
+  ✓ agent: ledger has exactly one BUY + one SELL (no research side-effects)
+  ✓ agent: paper account intact (1 round trip)
+  ✓ agent: no forbidden execution strings in new TA files
+  ✓ agent: paper-only invariants in heartbeat
+  ✓ agent: clean exit
+
+=== RESULT: 386 passed, 0 failed ===
+EXIT=0

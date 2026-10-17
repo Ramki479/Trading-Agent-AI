@@ -1,0 +1,2129 @@
+#!/usr/bin/env node
+/**
+ * agentd.js — REAL-MARKET SOLANA PAPER TRADER (Circuit paper-trader agent).
+ *
+ * Self-contained, dependency-free, 100% PAPER trading.
+ *
+ * Safety invariants (hard-coded — configuration can never override them):
+ *   • paperTrading is ALWAYS true. There is no live-trading code path.
+ *   • No wallet is created or loaded; no private keys / seed phrases exist.
+ *   • No real execution: every trade is simulated locally and is never
+ *     signed or broadcast. CIRCUIT_SIGNER_URL (if set) is ignored.
+ *   • custody is always "local".
+ *   • Wallet / signer / broadcast are DISABLED by design.
+ *
+ * Market data is REAL Solana market data (DexScreener primary, optional
+ * Circuit data API via CIRCUIT_PRICE_API_URL). No Math.random() is ever used
+ * for prices, P&L, or signals — every displayed value derives from observed
+ * real market data. The strategy (dip-reversal, thresholds below) is fixed —
+ * the V1 baseline is preserved exactly. On top of it sits a Circuit-style
+ * ADAPTIVE POLICY LAYER (agent-loop every 90 min, reflection every 4h,
+ * regime detection, learned gates, market-health gating, bounded session
+ * sizing, an approval workflow with shadow testing + rollback). Every
+ * adaptive mechanism is deterministic and data-driven; an OPTIONAL async
+ * LLM hook (CIRCUIT_LLM_URL) may reinterpret the session policy but is
+ * schema-validated, clamped, and never on the scanner hot path. See
+ * docs/CIRCUIT_CURRENT_RESEARCH.md and docs/CIRCUIT_TO_PAPER_AGENT_MAPPING.md.
+ *
+ * Persistent state lives in ${CIRCUIT_AGENT_DATA_DIR} (default
+ * ~/.circuit/agents/paper-trader):
+ *   portfolio.json      — account + open positions + cooldowns (atomic writes)
+ *   trades.jsonl        — append-only ledger of every BUY and SELL
+ *   equity-history.jsonl— append-only observed equity samples
+ *   heartbeat.json      — machine-readable state + full portfolio summary
+ *   candidates.json     — last discovery scan (real candidates + decisions)
+ *   config.json         — runtime config (auto-created with defaults)
+ *   meta.json           — agent metadata (no wallet, paper only)
+ *   agent.lock          — process lock (one agent per data dir)
+ *   agent.log           — human-readable log
+ *
+ * Usage:
+ *   node agentd.js
+ */
+
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const marketDataLib = require('./market-data.js');
+const perfLib = require('./performance-analyzer.js');
+const regimeLib = require('./regime-detector.js');
+const healthLib = require('./market-health.js');
+const gatesLib = require('./learned-gates.js');
+const adaptivePolicy = require('./adaptive-policy.js');
+const experiments = require('./strategy-experiments.js');
+const reflectionEngine = require('./reflection-engine.js');
+const atlasEngine = require('./atlas/atlas-engine.js');
+const llmAdapter = require('./llm-adapter.js');
+const integrityLib = require('./price-integrity.js');
+const tradingAgentsLib = require('./tradingagents-layer.js');
+
+/* ------------------------------------------------------------------ *
+ * Hard safety constants — never configurable.
+ * ------------------------------------------------------------------ */
+
+const AGENT_NAME = 'paper-trader';
+const MODE = 'paper';
+const CUSTODY = 'local';
+const PAPER_TRADING = true; // forced on. Live trading is impossible here.
+const WALLET_STATE = 'DISABLED';
+const SIGNER_STATE = 'DISABLED';
+const BROADCAST_STATE = 'DISABLED';
+const MARKET_LABEL = 'REAL SOLANA';
+const EXECUTION_LABEL = 'PAPER ONLY';
+
+/* ------------------------------------------------------------------ *
+ * STRATEGY — dip/reversal. These thresholds are fixed (do not change
+ * unless explicitly requested):
+ *   MAX_POSITIONS       = 5          max concurrently open paper positions
+ *   TRADE_SIZE_SOL      = 0.05       paper size per BUY (config default)
+ *   STOP_LOSS           = -6%        SELL when unrealized <= -6%
+ *   TAKE_PROFIT         = +8%        SELL when unrealized >= +8%
+ *   MIN_5M_RECOVERY     = +0.25%     BUY gate on local 5m recovery
+ *   MAX_5M_RECOVERY     = +8%
+ *   1h change           > -35% and <= +15%
+ *   MIN_SCORE           = 60
+ *   REENTRY_COOLDOWN    = 600000 ms  (10 min) after a SELL
+ * ------------------------------------------------------------------ */
+
+const MAX_POSITIONS = 5;
+const STOP_LOSS_PCT = -6;
+const TAKE_PROFIT_PCT = 8;
+const MIN_5M_RECOVERY_PCT = 0.25;
+const MAX_5M_RECOVERY_PCT = 8;
+const MIN_1H_CHANGE_PCT = -35;
+const MAX_1H_CHANGE_PCT = 15;
+const MIN_SCORE = 60;
+
+// Non-strategy operational knobs (env overridable — see loadConfig):
+//   CIRCUIT_MONITOR_MS, CIRCUIT_DISCOVERY_MS, CIRCUIT_SAMPLE_MS,
+//   CIRCUIT_HISTORY_WARM_MS (test warm-up target), CIRCUIT_COOLDOWN_MS,
+//   CIRCUIT_MAX_PRICE_AGE_MS, CIRCUIT_MAX_DIVERGENCE_PCT,
+//   CIRCUIT_PRICE_API_URL (optional Circuit data API), CIRCUIT_MOCK_MARKET_FILE (tests only).
+const DEFAULT_DISCOVERY_MS = 60000;   // token discovery every 60 s
+const DEFAULT_MONITOR_MS = 5000;      // monitor open positions every 5 s
+const DEFAULT_SAMPLE_MS = 15000;      // sample price history every 15 s
+const DEFAULT_HISTORY_TARGET_MS = 300000; // 5m recovery baseline ≈ 5 min old
+const DEFAULT_COOLDOWN_MS = 600000;   // 10 min re-entry cooldown
+const DEFAULT_MAX_PRICE_AGE_MS = 60000;   // refuse prices older than this
+const DEFAULT_MAX_DIVERGENCE_PCT = 25;    // reject suspicious cross-source divergence
+const HISTORY_KEEP_MS = 15 * 60 * 1000;   // keep ~15 min of per-token history
+const MIN_HISTORY_SAMPLES = 8;            // samples required before 5m is valid
+const SAMPLE_UNIVERSE_CAP = 40;           // bound the sampler universe
+
+const EQUITY_SAMPLE_DELTA = 0.0001;
+const EQUITY_SAMPLE_MAX_GAP_MS = 30000;
+
+const BOOT_TIME = Date.now();
+
+/* ------------------------------------------------------------------ *
+ * Paths.
+ * ------------------------------------------------------------------ */
+
+const dataDir = process.env.CIRCUIT_AGENT_DATA_DIR ||
+  path.join(os.homedir(), '.circuit', 'agents', 'paper-trader');
+
+const portfolioFile = path.join(dataDir, 'portfolio.json');
+const tradesFile = path.join(dataDir, 'trades.jsonl');
+const heartbeatFile = path.join(dataDir, 'heartbeat.json');
+const configFile = path.join(dataDir, 'config.json');
+const metaFile = path.join(dataDir, 'meta.json');
+const logFile = path.join(dataDir, 'agent.log');
+const equityHistoryFile = path.join(dataDir, 'equity-history.jsonl');
+const candidatesFile = path.join(dataDir, 'candidates.json');
+const lockFile = path.join(dataDir, 'agent.lock');
+
+/* ------------------------------------------------------------------ *
+ * Utilities.
+ * ------------------------------------------------------------------ */
+
+function round(n, digits = 8) {
+  if (!Number.isFinite(n)) return 0;
+  const f = Math.pow(10, digits);
+  return Math.round(n * f) / f;
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function sign(v) {
+  return v >= 0 ? '+' : '';
+}
+
+function fmtUsd(n) {
+  return '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 8 });
+}
+
+function fmtCompact(n) {
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return String(Math.round(n));
+}
+
+function log(msg) {
+  const line = `[${nowIso()}] ${msg}`;
+  console.log(line);
+  try { fs.appendFileSync(logFile, line + '\n'); } catch (_) { /* best effort */ }
+}
+
+function logBlock(text) {
+  console.log(text);
+  try { fs.appendFileSync(logFile, text + '\n'); } catch (_) { /* best effort */ }
+}
+
+/** Atomic write: write to <file>.tmp then rename over <file>. */
+function atomicWriteJson(file, obj) {
+  const tmp = file + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(obj, null, 2) + '\n');
+  fs.renameSync(tmp, file);
+}
+
+function appendLedger(trade) {
+  fs.appendFileSync(tradesFile, JSON.stringify(trade) + '\n');
+}
+
+/* ------------------------------------------------------------------ *
+ * Last-errors ring buffer (surfaced in heartbeat + dashboard).
+ * ------------------------------------------------------------------ */
+
+const lastErrors = [];
+function pushError(tag, msg) {
+  lastErrors.push({ ts: Date.now(), iso: nowIso(), tag, msg: String(msg).slice(0, 300) });
+  if (lastErrors.length > 10) lastErrors.shift();
+  log(`[${tag}] ${msg}`);
+}
+
+/* ------------------------------------------------------------------ *
+ * Equity history (append-only, read by the dashboard API).
+ * ------------------------------------------------------------------ */
+
+let lastEquitySample = null;
+let portfolio = null; // set in main()
+
+function equityRecord() {
+  return {
+    ts: Date.now(),
+    equitySol: portfolio.equitySol,
+    cashSol: portfolio.cashSol,
+    totalPnlSol: portfolio.totalPnlSol,
+    pnlPct: portfolio.pnlPct
+  };
+}
+
+function shouldSampleEquity() {
+  if (!lastEquitySample) return true;
+  const deltaEq = Math.abs(portfolio.equitySol - lastEquitySample.equitySol);
+  const deltaTs = Date.now() - lastEquitySample.ts;
+  return deltaEq >= EQUITY_SAMPLE_DELTA || deltaTs >= EQUITY_SAMPLE_MAX_GAP_MS;
+}
+
+function recordEquityHistory() {
+  try {
+    if (!shouldSampleEquity()) return;
+    const rec = equityRecord();
+    fs.appendFileSync(equityHistoryFile, JSON.stringify(rec) + '\n');
+    lastEquitySample = rec;
+  } catch (err) {
+    log(`WARN could not append equity history (${err.message})`);
+  }
+}
+
+/** Seed equity-history.jsonl once, only from real observed data. */
+function backfillEquityHistory() {
+  try {
+    if (fs.existsSync(equityHistoryFile)) return;
+
+    const rows = [];
+    if (fs.existsSync(tradesFile)) {
+      const lines = fs.readFileSync(tradesFile, 'utf8').split('\n');
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try { rows.push(JSON.parse(line)); } catch (_) { /* skip corrupt line */ }
+      }
+    }
+
+    const seed = [];
+    seed.push({
+      ts: rows.length ? Date.parse(rows[0].timestamp) - 60000 : portfolio.updatedAt || Date.now(),
+      equitySol: portfolio.startingCapitalSol,
+      cashSol: portfolio.startingCapitalSol,
+      totalPnlSol: 0,
+      pnlPct: 0
+    });
+
+    let cash = portfolio.startingCapitalSol;
+    let realized = 0;
+    for (const t of rows) {
+      if (t.side === 'BUY') cash = round(cash - t.valueSol, 8);
+      else if (t.side === 'SELL') {
+        cash = round(cash + t.valueSol, 8);
+        realized = round(realized + (t.realizedPnlSol || 0), 8);
+      } else continue;
+      const ts = Date.parse(t.timestamp) || Date.now();
+      seed.push({
+        ts,
+        equitySol: round(cash + realized, 8),
+        cashSol: round(cash, 8),
+        totalPnlSol: round(realized, 8),
+        pnlPct: round((realized / portfolio.startingCapitalSol) * 100, 4)
+      });
+    }
+
+    const now = Date.now();
+    for (const rec of seed) {
+      const ts = Math.min(rec.ts, now);
+      fs.appendFileSync(equityHistoryFile,
+        JSON.stringify({ ts, equitySol: rec.equitySol, cashSol: rec.cashSol, totalPnlSol: rec.totalPnlSol, pnlPct: rec.pnlPct }) + '\n');
+    }
+    log(`Seeded equity-history.jsonl from portfolio + ${rows.length} ledger record(s) (${seed.length} snapshot(s))`);
+  } catch (err) {
+    log(`WARN could not seed equity history (${err.message})`);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Configuration.
+ * ------------------------------------------------------------------ */
+
+const DEFAULT_CONFIG = {
+  scanIntervalMs: DEFAULT_MONITOR_MS,      // monitor open positions
+  discoveryIntervalMs: DEFAULT_DISCOVERY_MS,
+  sampleIntervalMs: DEFAULT_SAMPLE_MS,
+  paperTrading: true,
+  strategy: 'dip-reversal',
+  tradeSizeSol: 0.05,
+  startingCapitalSol: 10.0,
+  // Circuit-style adaptive layer (see docs/CIRCUIT_TO_PAPER_AGENT_MAPPING.md).
+  // Deterministic + data-driven. The LLM hook (llm.url) is OPTIONAL, async,
+  // schema-validated and never on the scanner hot path.
+  adaptive: {
+    enabled: true,
+    agentLoopIntervalMs: 90 * 60 * 1000,   // session policy every 90 min (upstream-verified)
+    reflectIntervalMs: 4 * 3600 * 1000,    // reflection every 4h (upstream-verified)
+    policyTtlMs: 90 * 60 * 1000,           // session policy TTL
+    autoApply: false,                      // persistent changes require operator approval until validated
+    minSamples: 8,                         // learned-gate cluster minimum (else INSUFFICIENT_DATA → V1)
+    gateConfidenceThreshold: 0.85,         // only apply learned gates at this confidence (upstream default)
+    minGradeSamples: 5,                    // reflection grading minimum sample
+    backtestMinTrades: 5,                  // backtest minimum candidate sample
+    shadowMinTrades: 5,                    // shadow evaluation minimum window sample
+    lossBreakerThreshold: 3,               // 3 consecutive losses → watchOnly window (upstream breaker)
+    sizing: { bull: 1.0, consolidation: 1.0, recovery: 0.5, dump: 0.0 }, // NEVER > 1.0 in paper
+    minTradeSizeSol: 0.0125,               // adaptive range floor
+    maxTradeSizeSol: 0.05,                 // hard ceiling — original maximum, never exceeded
+    minHealthScore: 60,                    // market-health gate threshold (0-100)
+    llm: { url: '', key: '', model: '' }   // optional OpenAI-compatible endpoint
+  },
+  // TradingAgents-style multi-agent RESEARCH layer (additive + advisory).
+  // OFF / SHADOW (default) / ADVISORY. It never gates or alters the Circuit
+  // V1 BUY/SELL path; it records research decisions and prediction accuracy.
+  tradingAgents: {
+    mode: 'SHADOW',
+    maxCandidatesPerCycle: 5,
+    maxDebateRounds: 2,
+    researchTimeoutMs: 10000,
+    cacheTtlMs: 60000
+  },
+  // ATLAS-style multi-agent INTELLIGENCE layer (parallel, advisory, research-grade).
+  // Runs beside TradingAgents and V1. Default SHADOW. ATLAS is advisory only —
+  // it never authorizes execution; V1 remains authoritative. ATLAS consumes the
+  // existing price-integrity verdict (never duplicates it).
+  atlas: {
+    mode: 'SHADOW',
+    maxCandidatesPerCycle: 3,
+    researchTimeoutMs: 10000,
+    cacheTtlMs: 60000
+  }
+};
+
+function envInt(name, dflt) {
+  const v = parseInt(process.env[name], 10);
+  return Number.isFinite(v) && v > 0 ? v : dflt;
+}
+
+function loadConfig() {
+  const cfg = Object.assign({}, DEFAULT_CONFIG);
+
+  if (fs.existsSync(configFile)) {
+    try {
+      Object.assign(cfg, JSON.parse(fs.readFileSync(configFile, 'utf8')));
+    } catch (err) {
+      log(`WARN config.json unreadable (${err.message}) — using defaults`);
+    }
+  } else {
+    fs.writeFileSync(configFile, JSON.stringify(DEFAULT_CONFIG, null, 2) + '\n');
+    log(`Created default config at ${configFile}`);
+  }
+
+  // Safety: configuration can never switch this agent to live trading.
+  if (cfg.paperTrading !== true) {
+    log('WARN config has paperTrading != true — forcing paperTrading=true (live trading is disabled by design)');
+  }
+  cfg.paperTrading = PAPER_TRADING;
+
+  cfg.scanIntervalMs = envInt('CIRCUIT_MONITOR_MS', Math.max(250, parseInt(cfg.scanIntervalMs, 10) || DEFAULT_MONITOR_MS));
+  cfg.discoveryIntervalMs = envInt('CIRCUIT_DISCOVERY_MS', Math.max(1000, parseInt(cfg.discoveryIntervalMs, 10) || DEFAULT_DISCOVERY_MS));
+  cfg.sampleIntervalMs = envInt('CIRCUIT_SAMPLE_MS', Math.max(200, parseInt(cfg.sampleIntervalMs, 10) || DEFAULT_SAMPLE_MS));
+
+  const ts = parseFloat(cfg.tradeSizeSol);
+  cfg.tradeSizeSol = Number.isFinite(ts) && ts > 0 ? round(ts, 8) : 0.05;
+
+  const sc = parseFloat(cfg.startingCapitalSol);
+  cfg.startingCapitalSol = Number.isFinite(sc) && sc > 0 ? round(sc, 8) : 10.0;
+
+  if (cfg.strategy !== 'dip-reversal') {
+    log(`WARN unknown strategy "${cfg.strategy}" — falling back to "dip-reversal"`);
+    cfg.strategy = 'dip-reversal';
+  }
+
+  // ---- Adaptive layer config (deterministic; env knobs override) ----------
+  const defAdapt = DEFAULT_CONFIG.adaptive;
+  const ad = Object.assign({}, defAdapt, cfg.adaptive && typeof cfg.adaptive === 'object' ? cfg.adaptive : {});
+  ad.enabled = process.env.CIRCUIT_ADAPTIVE_DISABLE === '1' ? false : ad.enabled !== false;
+  ad.agentLoopIntervalMs = envInt('CIRCUIT_AGENT_LOOP_MS', Math.max(2000, parseInt(ad.agentLoopIntervalMs, 10) || defAdapt.agentLoopIntervalMs));
+  ad.reflectIntervalMs = envInt('CIRCUIT_REFLECT_MS', Math.max(2000, parseInt(ad.reflectIntervalMs, 10) || defAdapt.reflectIntervalMs));
+  ad.policyTtlMs = envInt('CIRCUIT_POLICY_TTL_MS', Math.max(2000, parseInt(ad.policyTtlMs, 10) || defAdapt.policyTtlMs));
+  ad.autoApply = ad.autoApply === true;
+  ad.minSamples = Math.max(3, parseInt(ad.minSamples, 10) || defAdapt.minSamples);
+  ad.gateConfidenceThreshold = Math.max(0, Math.min(1, parseFloat(ad.gateConfidenceThreshold) || defAdapt.gateConfidenceThreshold));
+  ad.minGradeSamples = Math.max(2, parseInt(ad.minGradeSamples, 10) || defAdapt.minGradeSamples);
+  ad.backtestMinTrades = Math.max(2, parseInt(ad.backtestMinTrades, 10) || defAdapt.backtestMinTrades);
+  ad.shadowMinTrades = Math.max(2, parseInt(ad.shadowMinTrades, 10) || defAdapt.shadowMinTrades);
+  ad.lossBreakerThreshold = Math.max(2, parseInt(ad.lossBreakerThreshold, 10) || defAdapt.lossBreakerThreshold);
+  const sizing = ad.sizing && typeof ad.sizing === 'object' ? ad.sizing : {};
+  ad.sizing = {
+    bull: Math.max(0, Math.min(1, parseFloat(sizing.bull) || defAdapt.sizing.bull)),
+    consolidation: Math.max(0, Math.min(1, parseFloat(sizing.consolidation) || defAdapt.sizing.consolidation)),
+    recovery: Math.max(0, Math.min(1, parseFloat(sizing.recovery) || defAdapt.sizing.recovery)),
+    dump: Math.max(0, Math.min(1, parseFloat(sizing.dump) || defAdapt.sizing.dump))
+  };
+  const minSize = parseFloat(ad.minTradeSizeSol);
+  ad.minTradeSizeSol = Number.isFinite(minSize) && minSize > 0 ? Math.min(minSize, 0.05) : defAdapt.minTradeSizeSol;
+  const maxSize = parseFloat(ad.maxTradeSizeSol);
+  ad.maxTradeSizeSol = Number.isFinite(maxSize) && maxSize > 0 ? Math.min(maxSize, 0.05) : defAdapt.maxTradeSizeSol; // hard ceiling 0.05
+  if (ad.maxTradeSizeSol < ad.minTradeSizeSol) ad.minTradeSizeSol = ad.maxTradeSizeSol;
+  ad.minHealthScore = Math.max(0, Math.min(100, parseInt(ad.minHealthScore, 10) || defAdapt.minHealthScore));
+  ad.llm = Object.assign({ url: '', key: '', model: '' }, ad.llm && typeof ad.llm === 'object' ? ad.llm : {}, {
+    url: process.env.CIRCUIT_LLM_URL || (ad.llm && ad.llm.url) || '',
+    key: process.env.CIRCUIT_LLM_KEY || (ad.llm && ad.llm.key) || '',
+    model: process.env.CIRCUIT_LLM_MODEL || (ad.llm && ad.llm.model) || ''
+  });
+  cfg.adaptive = ad;
+
+  // ---- TradingAgents research layer config (advisory; default SHADOW) ------
+  const defTA = DEFAULT_CONFIG.tradingAgents;
+  const taCfg = Object.assign({}, defTA,
+    cfg.tradingAgents && typeof cfg.tradingAgents === 'object' ? cfg.tradingAgents : {});
+  const TA_MODES = ['OFF', 'SHADOW', 'ADVISORY'];
+  const envTaMode = String(process.env.CIRCUIT_TA_MODE || '').toUpperCase();
+  taCfg.mode = TA_MODES.includes(envTaMode) ? envTaMode
+    : (TA_MODES.includes(String(taCfg.mode).toUpperCase()) ? String(taCfg.mode).toUpperCase() : 'SHADOW');
+  taCfg.maxCandidatesPerCycle = Math.min(20, envInt('CIRCUIT_TA_MAX_CANDIDATES', Math.max(1, parseInt(taCfg.maxCandidatesPerCycle, 10) || defTA.maxCandidatesPerCycle)));
+  taCfg.maxDebateRounds = Math.min(10, envInt('CIRCUIT_TA_DEBATE_ROUNDS', Math.max(0, parseInt(taCfg.maxDebateRounds, 10) || defTA.maxDebateRounds)));
+  taCfg.researchTimeoutMs = envInt('CIRCUIT_TA_TIMEOUT_MS', Math.max(1000, parseInt(taCfg.researchTimeoutMs, 10) || defTA.researchTimeoutMs));
+  taCfg.cacheTtlMs = envInt('CIRCUIT_TA_CACHE_TTL_MS', Math.max(0, parseInt(taCfg.cacheTtlMs, 10) || defTA.cacheTtlMs));
+  cfg.tradingAgents = taCfg;
+
+  // ---- ATLAS intelligence layer config (parallel, advisory; default SHADOW) ----
+  const defAtlas = DEFAULT_CONFIG.atlas || {};
+  const atlasCfg = Object.assign({}, defAtlas,
+    cfg.atlas && typeof cfg.atlas === 'object' ? cfg.atlas : {});
+  const ATLAS_MODES = ['OFF', 'SHADOW', 'ADVISORY'];
+  const envAtlasMode = String(process.env.CIRCUIT_ATLAS_MODE || '').toUpperCase();
+  atlasCfg.mode = ATLAS_MODES.includes(envAtlasMode) ? envAtlasMode
+    : (ATLAS_MODES.includes(String(atlasCfg.mode).toUpperCase()) ? String(atlasCfg.mode).toUpperCase() : 'SHADOW');
+  atlasCfg.maxCandidatesPerCycle = Math.min(10, envInt('CIRCUIT_ATLAS_MAX_CANDIDATES', Math.max(1, parseInt(atlasCfg.maxCandidatesPerCycle, 10) || defAtlas.maxCandidatesPerCycle || 3)));
+  atlasCfg.researchTimeoutMs = envInt('CIRCUIT_ATLAS_TIMEOUT_MS', Math.max(1000, parseInt(atlasCfg.researchTimeoutMs, 10) || defAtlas.researchTimeoutMs || 10000));
+  atlasCfg.cacheTtlMs = envInt('CIRCUIT_ATLAS_CACHE_TTL_MS', Math.max(0, parseInt(atlasCfg.cacheTtlMs, 10) || defAtlas.cacheTtlMs || 60000));
+  cfg.atlas = atlasCfg;
+
+  return cfg;
+}
+
+/* ------------------------------------------------------------------ *
+ * Portfolio persistence + restart recovery.
+ * ------------------------------------------------------------------ */
+
+function newPortfolio(startingCapitalSol) {
+  return {
+    name: AGENT_NAME,
+    mode: MODE,
+    startingCapitalSol,
+    cashSol: startingCapitalSol,
+    investedSol: 0,
+    marketValueSol: 0,
+    equitySol: startingCapitalSol,
+    realizedPnlSol: 0,
+    unrealizedPnlSol: 0,
+    totalPnlSol: 0,
+    pnlPct: 0,
+    totalTrades: 0,
+    winningTrades: 0,
+    losingTrades: 0,
+    winRate: 0,
+    avgWinSol: 0,
+    avgLossSol: 0,
+    bestTradeSol: 0,
+    worstTradeSol: 0,
+    sumWinSol: 0,
+    sumLossSol: 0,
+    nextTradeId: 1,
+    scans: 0,
+    lastScanAt: null,
+    positions: [],
+    cooldowns: {},      // mint -> timestamp until which re-entry is blocked
+    updatedAt: Date.now()
+  };
+}
+
+/** Close any legacy position that has no real mint (e.g. old simulated
+ *  TKN positions). Realizes its last known value and frees capacity. */
+function migrateLegacyPositions(p) {
+  const legacy = p.positions.filter((pos) => !marketDataLib.isValidSolanaAddress(pos.mint));
+  if (!legacy.length) return;
+  for (const pos of legacy) {
+    const exitPrice = pos.currentPriceSol || pos.currentPrice || 0;
+    p.cashSol = round(p.cashSol + (pos.quantity || 0) * exitPrice, 8);
+    p.positions = p.positions.filter((x) => x !== pos);
+    log(`[PORTFOLIO] closed legacy position ${pos.symbol} (no real mint) at ${exitPrice} — realized into cash`);
+  }
+  log(`[PORTFOLIO] migrated ${legacy.length} legacy position(s) — account continues with ${p.positions.length} real position(s)`);
+}
+
+function loadPortfolio() {
+  if (fs.existsSync(portfolioFile)) {
+    try {
+      const p = JSON.parse(fs.readFileSync(portfolioFile, 'utf8'));
+      if (!p || typeof p !== 'object' ||
+          !Number.isFinite(p.cashSol) || !Number.isFinite(p.startingCapitalSol)) {
+        throw new Error('invalid portfolio.json');
+      }
+      const base = newPortfolio(p.startingCapitalSol);
+      for (const key of Object.keys(base)) {
+        if (p[key] === undefined) p[key] = base[key];
+      }
+      p.positions = Array.isArray(p.positions) ? p.positions : [];
+      p.cooldowns = p.cooldowns && typeof p.cooldowns === 'object' ? p.cooldowns : {};
+      migrateLegacyPositions(p);
+      log(`Loaded existing paper portfolio: cash=${p.cashSol} SOL, ${p.positions.length} open position(s), ` +
+        `realized P&L=${p.realizedPnlSol} SOL, total P&L=${p.totalPnlSol} SOL`);
+      return p;
+    } catch (err) {
+      const backup = portfolioFile + '.corrupt-' + Date.now();
+      try { fs.renameSync(portfolioFile, backup); } catch (_) { /* ignore */ }
+      log(`ERROR portfolio.json unreadable (${err.message}) — backed up to ${backup} and re-initializing`);
+    }
+  }
+  const p = newPortfolio(config.startingCapitalSol);
+  log(`Initialized new paper account: starting capital ${p.startingCapitalSol} SOL`);
+  return p;
+}
+
+/* ------------------------------------------------------------------ *
+ * Accounting.
+ * ------------------------------------------------------------------ */
+
+function recalculate(p) {
+  let invested = 0;
+  let marketValue = 0;
+  for (const pos of p.positions) {
+    pos.marketValueSol = round(pos.quantity * pos.currentPriceSol, 8);
+    pos.unrealizedPnlSol = round(pos.marketValueSol - pos.costSol, 8);
+    pos.unrealizedPnlPct = pos.costSol > 0
+      ? round(((pos.marketValueSol - pos.costSol) / pos.costSol) * 100, 4)
+      : 0;
+    invested += pos.costSol;
+    marketValue += pos.marketValueSol;
+  }
+  p.investedSol = round(invested, 8);
+  p.marketValueSol = round(marketValue, 8);
+  p.cashSol = round(p.cashSol, 8);
+  p.equitySol = round(p.cashSol + p.marketValueSol, 8);
+  p.totalPnlSol = round(p.equitySol - p.startingCapitalSol, 8);
+  p.pnlPct = p.startingCapitalSol > 0 ? round((p.totalPnlSol / p.startingCapitalSol) * 100, 4) : 0;
+  p.unrealizedPnlSol = round(p.marketValueSol - p.investedSol, 8);
+  p.winRate = p.totalTrades > 0 ? round((p.winningTrades / p.totalTrades) * 100, 2) : 0;
+  p.avgWinSol = p.winningTrades > 0 ? round(p.sumWinSol / p.winningTrades, 8) : 0;
+  p.avgLossSol = p.losingTrades > 0 ? round(p.sumLossSol / p.losingTrades, 8) : 0;
+  p.updatedAt = Date.now();
+}
+
+function persist() {
+  atomicWriteJson(portfolioFile, portfolio);
+}
+
+function writeHeartbeat(state) {
+  const priceSources = (market && typeof market.priceSources === 'function')
+    ? market.priceSources().map((s) => ({
+        name: s.name,
+        role: s.role || 'primary',
+        status: s.lastError ? 'error' : (s.lastOkAt ? 'ok' : 'unknown'),
+        lastOkAt: s.lastOkAt || null,
+        lastError: s.lastError || null
+      }))
+    : [];
+  atomicWriteJson(heartbeatFile, {
+    state,
+    name: AGENT_NAME,
+    paper: PAPER_TRADING,
+    custody: CUSTODY,
+    startedAt: BOOT_TIME,
+    startedAtIso: new Date(BOOT_TIME).toISOString(),
+    uptimeSec: Math.max(0, Math.round((Date.now() - BOOT_TIME) / 1000)),
+    lastScanAt: portfolio.lastScanAt || null,
+    scans: portfolio.scans,
+    market: MARKET_LABEL,
+    execution: EXECUTION_LABEL,
+    wallet: WALLET_STATE,
+    signer: SIGNER_STATE,
+    broadcast: BROADCAST_STATE,
+    maxPositions: MAX_POSITIONS,
+    openPositions: portfolio.positions.length,
+    solPriceUsd: lastSolPriceUsd,
+    priceSources,
+    lastErrors: lastErrors.slice(-5),
+    startingCapitalSol: portfolio.startingCapitalSol,
+    cashSol: portfolio.cashSol,
+    investedSol: portfolio.investedSol,
+    equitySol: portfolio.equitySol,
+    realizedPnlSol: portfolio.realizedPnlSol,
+    unrealizedPnlSol: portfolio.unrealizedPnlSol,
+    totalPnlSol: portfolio.totalPnlSol,
+    pnlPct: portfolio.pnlPct,
+    totalTrades: portfolio.totalTrades,
+    winningTrades: portfolio.winningTrades,
+    losingTrades: portfolio.losingTrades,
+    winRate: portfolio.winRate,
+    positions: portfolio.positions.map((pos) => ({
+      symbol: pos.symbol,
+      mint: pos.mint,
+      quantity: pos.quantity,
+      entryPriceSol: pos.entryPriceSol,
+      entryPriceUsd: pos.entryPriceUsd,
+      currentPriceSol: pos.currentPriceSol,
+      currentPriceUsd: pos.currentPriceUsd,
+      costSol: pos.costSol,
+      marketValueSol: pos.marketValueSol,
+      unrealizedPnlSol: pos.unrealizedPnlSol,
+      unrealizedPnlPct: pos.unrealizedPnlPct,
+      priceSource: pos.priceSource,
+      pairAddress: pos.pairAddress || null,
+      dex: pos.dex || null,
+      openedAt: pos.openedAt
+    })),
+    integrity: priceIntegrity ? integrityHeartbeatBlock() : null,
+    tradingAgents: tradingAgents ? tradingAgentsHeartbeatBlock() : null,
+    tradingAgentsValidation: tradingAgents ? tradingAgentsValidationHeartbeatBlock() : null,
+    atlas: atlas ? atlasHeartbeatBlock() : null,
+    adaptive: adaptiveState && config.adaptive && config.adaptive.enabled ? adaptiveHeartbeatBlock() : {
+      enabled: false
+    },
+    updatedAt: portfolio.updatedAt
+  });
+}
+
+/** Price-integrity summary embedded in the heartbeat (dashboard reads it). */
+function integrityHeartbeatBlock() {
+  try {
+    return priceIntegrity ? priceIntegrity.snapshot() : null;
+  } catch (err) {
+    log(`WARN integrity heartbeat block failed (${err.message})`);
+    return null;
+  }
+}
+
+/** TradingAgents summary embedded in the heartbeat (dashboard reads it). */
+function tradingAgentsHeartbeatBlock() {
+  try {
+    return tradingAgents ? tradingAgents.snapshot() : null;
+  } catch (err) {
+    log(`WARN tradingAgents heartbeat block failed (${err.message})`);
+    return null;
+  }
+}
+
+/** TradingAgents validation summary embedded in the heartbeat (dashboard reads it). */
+function tradingAgentsValidationHeartbeatBlock() {
+  try {
+    if (!tradingAgents) return null;
+    const cf = tradingAgents.getCounterfactual();
+    if (!cf || typeof cf.snapshot !== 'function') return null;
+    return cf.snapshot();
+  } catch (err) {
+    log(`WARN tradingAgentsValidation heartbeat block failed (${err.message})`);
+    return null;
+  }
+}
+
+/** ATLAS summary embedded in the heartbeat (dashboard reads it). */
+function atlasHeartbeatBlock() {
+  try {
+    return atlas ? atlas.snapshot() : null;
+  } catch (err) {
+    log(`WARN atlas heartbeat block failed (${err.message})`);
+    return null;
+  }
+}
+
+/** Adaptive summary embedded in the heartbeat (dashboard reads it). */
+function adaptiveHeartbeatBlock() {
+  const p = adaptiveState.policy;
+  const regime = currentRegime();
+  const versions = experiments.loadVersions(dataDir, { maxPositions: MAX_POSITIONS });
+  const gates = gatesLib.gateSummary(adaptiveState.gates);
+  return {
+    enabled: true,
+    strategyVersion: p ? p.strategyVersion : 'V1',
+    mode: p ? p.mode : 'active',
+    minScore: p ? p.minScore : 60,
+    maxBuys: p ? p.maxBuys : MAX_POSITIONS,
+    buysThisSession: p ? p.buysThisSession || 0 : 0,
+    regime: regime.regime,
+    regimeConfidence: regime.confidence || 0,
+    regimeReasoning: regime.reasoning || '',
+    reason: p ? p.reason : '',
+    sizeMultiplier: p && p.sizeMultiplier != null ? p.sizeMultiplier : 1.0,
+    source: p ? p.source : 'deterministic',
+    expiresAt: p ? p.expiresAt : null,
+    lastAgentLoopAt: adaptiveState.lastAgentLoopAt,
+    nextAgentLoopAt: adaptiveState.lastAgentLoopAt ? adaptiveState.lastAgentLoopAt + config.adaptive.agentLoopIntervalMs : null,
+    lastReflectionAt: adaptiveState.lastReflectionAt,
+    nextReflectionAt: adaptiveState.lastReflectionAt ? adaptiveState.lastReflectionAt + config.adaptive.reflectIntervalMs : null,
+    marketHealth: adaptiveState.health ? {
+      score: adaptiveState.health.score,
+      status: adaptiveState.health.status,
+      gate: adaptiveState.health.gate,
+      reason: adaptiveState.health.reason
+    } : null,
+    gates: gates,
+    versions: { current: versions.current },
+    experimentsSummary: experiments.summary(dataDir, { maxPositions: MAX_POSITIONS })
+  };
+}
+
+function writeMeta() {
+  let createdAt = nowIso();
+  if (fs.existsSync(metaFile)) {
+    try {
+      createdAt = JSON.parse(fs.readFileSync(metaFile, 'utf8')).createdAt || createdAt;
+    } catch (_) { /* keep now */ }
+  }
+  atomicWriteJson(metaFile, {
+    name: AGENT_NAME,
+    mode: MODE,
+    paper: PAPER_TRADING,
+    custody: CUSTODY,
+    createdAt,
+    signerUrl: null, // never used — this agent never signs anything
+    wallet: null     // never created — nothing to fund
+  });
+}
+
+/* ------------------------------------------------------------------ *
+ * Process lock — one agent per data dir.
+ * ------------------------------------------------------------------ */
+
+function pidAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return err && err.code === 'EPERM'; // exists but not ours to signal
+  }
+}
+
+function acquireLock() {
+  if (fs.existsSync(lockFile)) {
+    try {
+      const lock = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+      if (lock && pidAlive(lock.pid)) {
+        log(`ERROR another agent instance is already running (pid ${lock.pid}, started ${new Date(lock.startedAt).toISOString()}) — exiting`);
+        console.error(`agent.lock held by pid ${lock.pid} — refusing to start a second copy`);
+        process.exit(1);
+      }
+      log(`Stale agent.lock (pid ${lock && lock.pid} not running) — taking over`);
+    } catch (_) { /* corrupt lock → take over */ }
+  }
+  atomicWriteJson(lockFile, { pid: process.pid, startedAt: Date.now(), host: os.hostname() });
+}
+
+function releaseLock() {
+  try {
+    if (fs.existsSync(lockFile)) {
+      const lock = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+      if (lock && lock.pid === process.pid) fs.unlinkSync(lockFile);
+    }
+  } catch (_) { /* best effort */ }
+}
+
+/* ------------------------------------------------------------------ *
+ * Trade execution (PAPER ONLY — no wallet, no signer, no broadcast).
+ * ------------------------------------------------------------------ */
+
+function executePaperBuy(cand, priceInfo) {
+  if (portfolio.positions.length >= MAX_POSITIONS) return false;
+  // Adaptive paper size: base × regime multiplier × market-health multiplier,
+  // clamped to the hard range [adaptive.minTradeSizeSol, adaptive.maxTradeSizeSol].
+  // maxTradeSizeSol is a hard ceiling (default 0.05 SOL) — never exceeded. In
+  // V1/default conditions both multipliers are 1.0, so the size is unchanged,
+  // and with the adaptive layer disabled the V1 size is used exactly.
+  const baseSize = round(config.tradeSizeSol, 8);
+  let cost;
+  let regimeMult = 1.0;
+  let healthMult = 1.0;
+  if (!adaptiveEnabled()) {
+    cost = baseSize;
+  } else {
+    regimeMult = adaptiveState.policy && adaptiveState.policy.sizeMultiplier != null
+      ? adaptiveState.policy.sizeMultiplier : 1.0;
+    healthMult = adaptiveState.health && adaptiveState.health.sizeMultiplier != null
+      ? adaptiveState.health.sizeMultiplier : 1.0;
+    const rawSize = baseSize * regimeMult * healthMult;
+    cost = round(
+      Math.min(config.adaptive.maxTradeSizeSol, Math.max(config.adaptive.minTradeSizeSol, rawSize)), 8);
+  }
+  if (portfolio.cashSol < cost) {
+    log(`[FILTER] ${cand.symbol} insufficient cash (${portfolio.cashSol.toFixed(4)} SOL)`);
+    return false;
+  }
+  const quantity = round(cost / priceInfo.priceSol, 8);
+  if (!(quantity > 0)) {
+    log(`[FILTER] ${cand.symbol} quantity <= 0 (price ${priceInfo.priceSol}) — skipping`);
+    return false;
+  }
+
+  portfolio.cashSol = round(portfolio.cashSol - cost, 8);
+
+  const position = {
+    symbol: cand.symbol,
+    mint: cand.mint,
+    quantity,
+    entryPriceSol: round(priceInfo.priceSol, 12),
+    entryPriceUsd: round(priceInfo.priceUsd, 12),
+    currentPriceSol: round(priceInfo.priceSol, 12),
+    currentPriceUsd: round(priceInfo.priceUsd, 12),
+    costSol: cost,
+    marketValueSol: cost,
+    unrealizedPnlSol: 0,
+    unrealizedPnlPct: 0,
+    priceSource: priceInfo.source,
+    // Price identity preserved from entry (see price-integrity.js) — the
+    // position keeps the exact pool/source/prices it was opened on.
+    pairAddress: priceInfo.pairAddress || null,
+    dex: priceInfo.dex || null,
+    fetchedAt: priceInfo.timestamp || null,
+    priceAgeMs: Number.isFinite(priceInfo.ageMs) ? priceInfo.ageMs : null,
+    openedAt: nowIso(),
+    entryScore: cand.score,
+    entryChange1hPct: cand.change1hPct,
+    entry5mRecoveryPct: cand.recoveryPct
+  };
+  portfolio.positions.push(position);
+
+  // Anchor the entry identity (pair/source/prices) in the integrity layer so
+  // monitoring compares every later observation against the entry baseline.
+  if (priceIntegrity) {
+    try { priceIntegrity.notePositionOpened(position); } catch (_) { /* diagnostics never block a trade */ }
+  }
+
+  recalculate(portfolio);
+  // Durability order matters: the portfolio (source of truth) is persisted
+  // BEFORE the ledger row is appended, so a crash mid-trade can never leave a
+  // position in the ledger that is not in the portfolio (which would let a
+  // sold position resurrect on restart). The worst case is a lost ledger row,
+  // never corrupted accounting.
+  persist();
+
+  appendLedger({
+    id: portfolio.nextTradeId++,
+    timestamp: nowIso(),
+    side: 'BUY',
+    symbol: cand.symbol,
+    mint: cand.mint,
+    pairAddress: priceInfo.pairAddress || null,
+    dex: priceInfo.dex || null,
+    quantity,
+    price: round(priceInfo.priceSol, 12),
+    priceUsd: round(priceInfo.priceUsd, 12),
+    valueSol: cost,
+    realizedPnlSol: 0,
+    realizedPnlPct: 0,
+    source: priceInfo.source,
+    score: cand.score,
+    change1hPct: cand.change1hPct,
+    recovery5mPct: cand.recoveryPct,
+    liquidityUsd: cand.liquidityUsd,
+    volume24hUsd: cand.volume24hUsd,
+    regime: adaptiveState.regimeState ? adaptiveState.regimeState.regime : null,
+    policyMode: adaptiveState.policy ? adaptiveState.policy.mode : null,
+    sizeMultiplier: regimeMult,
+    adaptiveSizeSol: cost
+  });
+
+  // Session buy counter (durable, in-memory atomic — upstream agent-loop pattern).
+  try { adaptivePolicy.incrementSessionBuy(dataDir); } catch (_) { /* best effort */ }
+
+  logBlock(
+`[PAPER BUY] ${cand.symbol}
+Mint: ${cand.mint}
+Price: ${fmtUsd(priceInfo.priceUsd)}
+Price SOL: ${priceInfo.priceSol.toFixed(12)}
+Size: ${cost.toFixed(5)} SOL
+Source: ${priceInfo.source}
+1h Change: ${sign(cand.change1hPct)}${cand.change1hPct.toFixed(2)}%
+5m Recovery: ${sign(cand.recoveryPct)}${cand.recoveryPct.toFixed(2)}%
+Score: ${cand.score}
+Cash: ${portfolio.cashSol.toFixed(5)} SOL
+Equity: ${portfolio.equitySol.toFixed(5)} SOL`);
+  return true;
+}
+
+function executePaperSell(position, priceInfo, reason) {
+  const exitValue = round(position.quantity * priceInfo.priceSol, 8);
+  const realized = round(exitValue - position.costSol, 8);
+  const realizedPct = position.costSol > 0 ? round((realized / position.costSol) * 100, 4) : 0;
+
+  portfolio.cashSol = round(portfolio.cashSol + exitValue, 8);
+  portfolio.realizedPnlSol = round(portfolio.realizedPnlSol + realized, 8);
+  portfolio.totalTrades += 1;
+
+  if (realized > 0) {
+    portfolio.winningTrades += 1;
+    portfolio.sumWinSol = round(portfolio.sumWinSol + realized, 8);
+  } else if (realized < 0) {
+    portfolio.losingTrades += 1;
+    portfolio.sumLossSol = round(portfolio.sumLossSol + realized, 8);
+  }
+  portfolio.bestTradeSol = Math.max(portfolio.bestTradeSol, realized);
+  portfolio.worstTradeSol = Math.min(portfolio.worstTradeSol, realized);
+
+  // Re-entry cooldown (persisted with the portfolio — survives restarts).
+  portfolio.cooldowns[position.mint] = Date.now() + cooldownMs;
+
+  portfolio.positions = portfolio.positions.filter((p) => p !== position);
+
+  recalculate(portfolio);
+  // Persist the portfolio BEFORE the ledger row (see executePaperBuy). The
+  // portfolio is the source of truth; the ledger must never lead it.
+  persist();
+
+  appendLedger({
+    id: portfolio.nextTradeId++,
+    timestamp: nowIso(),
+    side: 'SELL',
+    symbol: position.symbol,
+    mint: position.mint,
+    pairAddress: position.pairAddress || null,
+    dex: position.dex || null,
+    quantity: position.quantity,
+    price: round(priceInfo.priceSol, 12),
+    priceUsd: round(priceInfo.priceUsd, 12),
+    valueSol: exitValue,
+    realizedPnlSol: realized,
+    realizedPnlPct: realizedPct,
+    entryPriceSol: position.entryPriceSol,
+    costSol: position.costSol,
+    source: priceInfo.source,
+    reason
+  });
+
+  logBlock(
+`[PAPER SELL] ${position.symbol} (${reason})
+P&L: ${sign(realized)}${realized.toFixed(5)} SOL (${sign(realizedPct)}${realizedPct.toFixed(2)}%)
+Realized P&L: ${sign(portfolio.realizedPnlSol)}${portfolio.realizedPnlSol.toFixed(5)} SOL
+Total P&L: ${sign(portfolio.totalPnlSol)}${portfolio.totalPnlSol.toFixed(5)} SOL
+Equity: ${portfolio.equitySol.toFixed(5)} SOL`);
+
+  // Position closed → drop its live integrity anchor/quarantine.
+  if (priceIntegrity) {
+    try { priceIntegrity.notePositionClosed(position.mint); } catch (_) { /* best effort */ }
+  }
+
+  // TradingAgents prediction tracking (advisory only — never tunes strategy).
+  if (tradingAgents) {
+    try {
+      const entryTs = Date.parse(position.openedAt || '') || Date.now();
+      tradingAgents.recordTradeOutcome({
+        mint: position.mint,
+        pnlPct: realizedPct,
+        entryTs,
+        sellTs: Date.now()
+      });
+    } catch (_) { /* best effort */ }
+  }
+  // ATLAS outcome tracking — look-ahead-free evaluation of any ATLAS
+  // predictions made before this trade's entry timestamp.
+  if (atlas && typeof atlas.recordTradeOutcome === 'function') {
+    try {
+      const entryTs = Date.parse(position.openedAt || '') || Date.now();
+      const atlasOutcome = atlas.recordTradeOutcome({
+        mint: position.mint,
+        pnlPct: realizedPct,
+        entryTs,
+        sellTs: Date.now()
+      });
+      if (atlasOutcome && atlasOutcome.found) {
+        log(`[ATLAS-OUTCOME] resolved ${atlasOutcome.outcomes.length} prediction(s) for ${position.symbol} pnl=${realizedPct.toFixed(2)}%`);
+      }
+    } catch (_) { /* best effort — never affects execution */ }
+  }
+  return true;
+}
+
+/* ------------------------------------------------------------------ *
+ * Local price history + 5-minute recovery.
+ *
+ * The 5m recovery used for trading is computed ONLY from local real-time
+ * samples (~every 15 s, ~15 min kept). It is never taken from the discovery
+ * API's reported 5m value. While history is insufficient, 5m = WARMING and
+ * the token cannot be traded.
+ * ------------------------------------------------------------------ */
+
+const history = new Map(); // mint -> { samples: [{ts, priceUsd, priceSol, source}] }
+
+const historyTargetMs = envInt('CIRCUIT_HISTORY_WARM_MS', DEFAULT_HISTORY_TARGET_MS);
+const cooldownMs = envInt('CIRCUIT_COOLDOWN_MS', DEFAULT_COOLDOWN_MS);
+const maxPriceAgeMs = envInt('CIRCUIT_MAX_PRICE_AGE_MS', DEFAULT_MAX_PRICE_AGE_MS);
+const maxDivergencePct = envInt('CIRCUIT_MAX_DIVERGENCE_PCT', DEFAULT_MAX_DIVERGENCE_PCT);
+
+/**
+ * Compute 5m recovery from local samples. Returns
+ *   { warming: false, pct, baselineAgeMs, samples } or
+ *   { warming: true, samples, reason }
+ * The baseline must be approximately historyTargetMs old (within 25%).
+ */
+function compute5mRecoveryFromSamples(samples, targetMs) {
+  const n = samples.length;
+  if (!n) return { warming: true, samples: 0, reason: 'no samples yet' };
+  if (n < MIN_HISTORY_SAMPLES) return { warming: true, samples: n, reason: 'warming' };
+  const now = Date.now();
+  let best = null;
+  let bestDiff = Infinity;
+  for (const s of samples) {
+    const diff = Math.abs((now - s.ts) - targetMs);
+    if (diff < bestDiff) { bestDiff = diff; best = s; }
+  }
+  if (!best || bestDiff > targetMs * 0.25) {
+    return { warming: true, samples: n, reason: 'baseline not ~5m old yet' };
+  }
+  const cur = samples[n - 1];
+  const pct = cur.priceUsd > 0 && best.priceUsd > 0
+    ? ((cur.priceUsd / best.priceUsd) - 1) * 100
+    : 0;
+  return { warming: false, pct: round(pct, 2), baselineAgeMs: Math.round((now - best.ts) / 1000), samples: n };
+}
+
+function compute5mRecovery(mint) {
+  const h = history.get(mint);
+  if (!h) return { warming: true, samples: 0, reason: 'no history' };
+  return compute5mRecoveryFromSamples(h.samples, historyTargetMs);
+}
+
+function addSample(mint, info) {
+  let h = history.get(mint);
+  if (!h) { h = { samples: [] }; history.set(mint, h); }
+  h.samples.push({
+    ts: info.timestamp || Date.now(),
+    priceUsd: info.priceUsd,
+    priceSol: info.priceSol,
+    source: info.source
+  });
+  const cutoff = Date.now() - HISTORY_KEEP_MS;
+  while (h.samples.length && h.samples[0].ts < cutoff) h.samples.shift();
+}
+
+/* ------------------------------------------------------------------ *
+ * Strategy scoring (deterministic, from REAL market data only).
+ *
+ *   0..35  deeper 1h dip (within the allowed -35%..+15% band) scores higher
+ *   0..30  stronger local 5m recovery (0.25%..8%) scores higher
+ *   0..20  liquidity (log scale, $2k..$100k+)
+ *   0..15  volume (log scale, $10k..$250k+)
+ * ------------------------------------------------------------------ */
+
+function computeScore({ change1hPct, recoveryPct, liquidityUsd, volume24hUsd }) {
+  let s = 0;
+  const dip = Math.min(1, Math.max(0, (0 - change1hPct) / 35));
+  s += 5 + 30 * dip;
+  const rec = recoveryPct == null ? 0 : Math.min(1, Math.max(0, (recoveryPct - MIN_5M_RECOVERY_PCT) / (MAX_5M_RECOVERY_PCT - MIN_5M_RECOVERY_PCT)));
+  s += 30 * rec;
+  const liq = liquidityUsd || 0;
+  s += liq >= 100000 ? 20 : liq >= 50000 ? 16 : liq >= 20000 ? 12 : liq >= 10000 ? 8 : liq >= 5000 ? 5 : liq >= 2000 ? 2 : 0;
+  const vol = volume24hUsd || 0;
+  s += vol >= 250000 ? 15 : vol >= 100000 ? 12 : vol >= 50000 ? 8 : vol >= 20000 ? 5 : vol >= 10000 ? 3 : 0;
+  return Math.round(s);
+}
+
+/* ------------------------------------------------------------------ *
+ * Loops: sampler (history), monitor (open positions), discovery (scans).
+ * ------------------------------------------------------------------ */
+
+let samplingActive = false;
+let monitoringActive = false;
+let discoveringActive = false;
+let sampleUniverse = new Set();
+let market = null;
+let lastSolPriceUsd = null;
+let priceIntegrity = null; // market-price integrity layer (created in main)
+let tradingAgents = null;  // TradingAgents research layer (created in main)
+let atlas = null;          // ATLAS intelligence layer (parallel, advisory, research-grade)
+
+// ---- Adaptive layer state ------------------------------------------------
+let adaptiveState = {
+  policy: null,          // session policy (adaptive-policy.json)
+  regimeState: null,     // regime state (regime-state.json)
+  gates: null,           // promoted learned gates (learned-gates.json)
+  health: null,          // market-health proxy (per-scan)
+  discoveryFailures: 0,  // consecutive discovery failures
+  lastSolFetchAt: null,  // last real SOL/USD fetch time
+  lastScanQuality: null, // { candidates, withLiquidity } from last scan
+  lastAgentLoopAt: null,
+  lastReflectionAt: null
+};
+
+function adaptiveEnabled() {
+  return config && config.adaptive && config.adaptive.enabled;
+}
+
+async function refreshSolPrice() {
+  try {
+    const sol = await market.getSolPriceUsd();
+    if (sol && sol.priceUsd > 0) {
+      lastSolPriceUsd = round(sol.priceUsd, 4);
+      adaptiveState.lastSolFetchAt = Date.now();
+    }
+  } catch (err) {
+    pushError('PRICE-FALLBACK', `SOL price fetch failed (${err.message})`);
+  }
+}
+
+/** Market-health inputs collected from real observable agent state (paper-only proxy). */
+function computeMarketHealth() {
+  const sources = (market && typeof market.priceSources === 'function') ? market.priceSources() : [];
+  const health = healthLib.computeHealth({
+    sourceStats: sources.map((s) => ({
+      name: s.name, status: s.lastError ? 'error' : (s.lastOkAt ? 'ok' : 'unknown'),
+      lastOkAt: s.lastOkAt, lastError: s.lastError
+    })),
+    solPriceAgeMs: adaptiveState.lastSolFetchAt ? Date.now() - adaptiveState.lastSolFetchAt : null,
+    solPriceMaxAgeMs: config.adaptive.solPriceMaxAgeMs || Math.max(120000, maxPriceAgeMs * 2),
+    discoveryFailures: adaptiveState.discoveryFailures,
+    lastScanQuality: adaptiveState.lastScanQuality,
+    cfg: { minHealthScore: config.adaptive.minHealthScore }
+  });
+  adaptiveState.health = health;
+  return health;
+}
+
+/** Current regime (cached state if fresh, else live detect without persisting). */
+function currentRegime() {
+  if (adaptiveState.regimeState && adaptiveState.regimeState.validUntil &&
+      Date.now() < new Date(adaptiveState.regimeState.validUntil).getTime()) {
+    return adaptiveState.regimeState;
+  }
+  return { regime: 'UNKNOWN', confidence: 0, reasoning: 'stale or undetected — V1 baseline' };
+}
+
+/** Closed trades from the ledger (used by agent-loop / reflection). */
+function closedTrades() {
+  return perfLib.pairTrades(perfLib.readLedgerFile(tradesFile)).closed;
+}
+
+async function sampleOnce() {
+  if (samplingActive) return; // never overlap cycles
+  samplingActive = true;
+  const mints = Array.from(sampleUniverse).slice(0, SAMPLE_UNIVERSE_CAP);
+  if (!mints.length) { samplingActive = false; return; }
+  try {
+    const prices = await market.fetchTokenPrices(mints);
+    let ok = 0;
+    for (const [mint, info] of prices) {
+      if (!marketDataLib.isValidPrice(info)) continue;
+      addSample(mint, info);
+      ok += 1;
+    }
+    const missing = mints.length - prices.size;
+    if (missing > 0) log(`[HISTORY-SKIP] ${missing}/${mints.length} token(s) had no usable price this cycle`);
+    if (ok > 0) log(`[SAMPLER] recorded ${ok} price sample(s)`);
+  } catch (err) {
+    pushError('HISTORY-SKIP', `sampler error: ${err.message}`);
+  } finally {
+    samplingActive = false;
+  }
+}
+
+async function monitorOnce() {
+  if (monitoringActive) return;
+  monitoringActive = true;
+  const hadPositions = portfolio.positions.length > 0;
+  try {
+    if (!hadPositions) return;
+    const mints = portfolio.positions.map((p) => p.mint);
+    const prices = await market.fetchTokenPrices(mints);
+    for (const position of portfolio.positions.slice()) {
+      const info = prices.get(position.mint);
+      if (!info || !marketDataLib.isValidPrice(info)) {
+        pushError('PRICE', `no fresh price for open position ${position.symbol} — holding at last price`);
+        continue; // NEVER assume a price. NO TRADE on missing data.
+      }
+      if (marketDataLib.priceAgeMs(info) > maxPriceAgeMs) {
+        pushError('PRICE', `stale price for open position ${position.symbol} (age ${marketDataLib.priceAgeMs(info)}ms) — holding`);
+        continue;
+      }
+      // PRICE INTEGRITY — accounting trust gate (BELOW the strategy; never a
+      // strategy rule). A rejected/suspicious observation may NOT move the
+      // position price and may NOT trigger SL/TP: we keep the last valid
+      // price and wait for confirmation. Only 'accepted'/'confirmed'
+      // observations reach the existing strategy monitor below, so SL/TP and
+      // recovery logic behave exactly as before on trustworthy prices.
+      if (priceIntegrity) {
+        try {
+          const verdict = priceIntegrity.checkPositionObservation({
+            position,
+            observation: info,
+            now: Date.now()
+          });
+          if (verdict.status !== 'accepted' && verdict.status !== 'confirmed') {
+            continue; // rejected / suspicious / awaiting confirmation — hold, NO SELL
+          }
+        } catch (err) {
+          pushError('PRICE-INTEGRITY', `integrity check error for ${position.symbol}: ${err.message} — holding at last valid price`);
+          continue;
+        }
+      }
+      position.currentPriceSol = round(info.priceSol, 12);
+      position.currentPriceUsd = round(info.priceUsd, 12);
+      position.priceSource = info.source;
+      const pnlPct = position.entryPriceSol > 0
+        ? ((position.currentPriceSol - position.entryPriceSol) / position.entryPriceSol) * 100
+        : 0;
+log(
+  `[POSITION-OBS] ${position.symbol} ` +
+  `entrySol=${position.entryPriceSol} ` +
+  `priceSol=${position.currentPriceSol} ` +
+  `priceUsd=${position.currentPriceUsd} ` +
+  `pnl=${pnlPct.toFixed(4)}% ` +
+  `ageMs=${marketDataLib.priceAgeMs(info)} ` +
+  `pair=${info.pairAddress || '-'} ` +
+  `dex=${info.dex || '-'} ` +
+  `source=${info.source || '-'}`
+);
+
+      let reason = null;
+      if (pnlPct <= STOP_LOSS_PCT) reason = 'stop-loss';
+      else if (pnlPct >= TAKE_PROFIT_PCT) reason = 'take-profit';
+      if (reason) {
+        log(`[${reason.toUpperCase()}] ${position.symbol} unrealized ${pnlPct.toFixed(2)}% — closing paper position`);
+        executePaperSell(position, info, reason);
+      }
+    }
+  } catch (err) {
+    pushError('MONITOR-ERROR', `monitor cycle failed: ${err.message}`);
+  } finally {
+    // Persist immediately after a monitor cycle so a stop-loss/take-profit
+    // close lands on disk without waiting for the next discovery scan — a
+    // sold position must never reappear after a restart.
+    if (hadPositions) {
+      try {
+        recalculate(portfolio);
+        persist();
+        if (priceIntegrity) priceIntegrity.persist();
+        recordEquityHistory();
+        writeHeartbeat('running');
+      } catch (err) {
+        pushError('MONITOR-ERROR', `persist after monitor failed: ${err.message}`);
+      }
+    }
+    monitoringActive = false;
+  }
+}
+
+function inCooldown(mint) {
+  const until = portfolio.cooldowns[mint];
+  return until ? Math.max(0, until - Date.now()) : 0;
+}
+
+/** Buy-time price gate — NO TRADE on missing, invalid, or stale prices.
+ *  Pure and exported so the branches are unit-testable. */
+function evaluatePriceGate(info, maxAge) {
+  if (!marketDataLib.isValidPrice(info)) {
+    return { ok: false, reason: 'price unavailable' };
+  }
+  if (marketDataLib.priceAgeMs(info) > maxAge) {
+    return { ok: false, reason: `price stale (age ${Math.round(marketDataLib.priceAgeMs(info) / 1000)}s)` };
+  }
+  return { ok: true };
+}
+
+/**
+ * TradingAgents research context — REAL observed state only. The research
+ * layer consumes the same regime/health/integrity verdicts as the strategy
+ * (it never replaces them) and never receives any data it could fabricate.
+ */
+function buildTradingAgentsContext(valid) {
+  const now = Date.now();
+  const closed = closedTrades();
+  const week = closed.filter((t) => t.exitTs >= now - 7 * perfLib.MS_DAY);
+  const metrics = perfLib.computeMetrics(week, portfolio.startingCapitalSol);
+  const reg = currentRegime();
+  const health = adaptiveState.health; // may be null when adaptive is disabled
+  const vols = valid.map((c) => Number(c.volume24hUsd) || 0).filter((v) => v > 0);
+  const avgVolumeUsd = vols.length ? vols.reduce((a, b) => a + b, 0) / vols.length : 0;
+  const historyByMint = {};
+  for (const c of valid) {
+    const h = history.get(c.mint);
+    historyByMint[c.mint] = { samples: h ? h.samples.slice(-40) : [], warming: c.recoveryStatus === 'warming' };
+  }
+  for (const pos of portfolio.positions) {
+    const h = history.get(pos.mint);
+    if (!historyByMint[pos.mint]) historyByMint[pos.mint] = { samples: h ? h.samples.slice(-40) : [], warming: false };
+  }
+  return {
+    portfolio: {
+      positionsOpen: portfolio.positions.length,
+      maxPositions: MAX_POSITIONS,
+      totalTrades: portfolio.totalTrades,
+      realizedPnlSol: portfolio.realizedPnlSol,
+      winRate: portfolio.winRate,
+      cashSol: portfolio.cashSol,
+      equitySol: portfolio.equitySol,
+      startingCapitalSol: portfolio.startingCapitalSol,
+      lossStreak: metrics.lossStreak,
+      maxDrawdownPct: metrics.maxDrawdownPct
+    },
+    metrics,
+    regime: { regime: reg.regime, confidence: reg.confidence, reasoning: reg.reasoning },
+    health: health ? { score: health.score, status: health.status, gate: health.gate, reason: health.reason } : null,
+    market: { solPriceUsd: lastSolPriceUsd, solMomentumPct: null },
+    integrity: priceIntegrity ? priceIntegrity.snapshot() : null,
+    historyByMint,
+    universe: { candidates: valid.length, avgVolumeUsd }
+  };
+}
+
+/**
+ * ATLAS research context — same facts as TradingAgents but structured for the
+ * ATLAS staged pipeline. ATLAS consumes the existing price-integrity verdict
+ * (never duplicates it). No future data is used.
+ */
+function buildAtlasContext(valid) {
+  const now = Date.now();
+  const closed = closedTrades();
+  const week = closed.filter((t) => t.exitTs >= now - 7 * perfLib.MS_DAY);
+  const metrics = perfLib.computeMetrics(week, portfolio.startingCapitalSol);
+  const reg = currentRegime();
+  const health = adaptiveState.health;
+  const vols = valid.map((c) => Number(c.volume24hUsd) || 0).filter((v) => v > 0);
+  const avgVolumeUsd = vols.length ? vols.reduce((a, b) => a + b, 0) / vols.length : 0;
+  const historyByMint = {};
+  for (const c of valid) {
+    const h = history.get(c.mint);
+    historyByMint[c.mint] = { samples: h ? h.samples.slice(-40) : [], warming: c.recoveryStatus === 'warming' };
+  }
+  for (const pos of portfolio.positions) {
+    const h = history.get(pos.mint);
+    if (!historyByMint[pos.mint]) historyByMint[pos.mint] = { samples: h ? h.samples.slice(-40) : [], warming: false };
+  }
+  return {
+    portfolio: {
+      positionsOpen: portfolio.positions.length,
+      maxPositions: MAX_POSITIONS,
+      totalTrades: portfolio.totalTrades,
+      realizedPnlSol: portfolio.realizedPnlSol,
+      winRate: portfolio.winRate,
+      cashSol: portfolio.cashSol,
+      equitySol: portfolio.equitySol,
+      startingCapitalSol: portfolio.startingCapitalSol,
+      lossStreak: metrics.lossStreak,
+      maxDrawdownPct: metrics.maxDrawdownPct
+    },
+    metrics,
+    regime: { regime: reg.regime, confidence: reg.confidence, reasoning: reg.reasoning },
+    health: health ? { score: health.score, status: health.status, gate: health.gate, reason: health.reason } : null,
+    market: { solPriceUsd: lastSolPriceUsd, solMomentumPct: null },
+    integrity: priceIntegrity ? priceIntegrity.snapshot() : null,
+    historyByMint,
+    universe: { candidates: valid.length, avgVolumeUsd },
+    tradeSizeSol: config.tradeSizeSol
+  };
+}
+
+async function discoveryOnce() {
+  if (discoveringActive) return;
+  discoveringActive = true;
+  try {
+    portfolio.scans += 1;
+    portfolio.lastScanAt = Date.now();
+
+    let candidates = [];
+    try {
+      candidates = await market.discoverCandidates();
+    } catch (err) {
+      pushError('DISCOVERY-SKIP', `discovery failed: ${err.message}`);
+      adaptiveState.discoveryFailures = (adaptiveState.discoveryFailures || 0) + 1;
+      writeCandidatesFile([]);
+      recalculate(portfolio);
+      persist();
+      writeHeartbeat('running');
+      return;
+    }
+
+    // Keep only real, valid Solana mints.
+    const valid = candidates.filter((c) =>
+      marketDataLib.isValidSolanaAddress(c.mint) &&
+      Number.isFinite(c.priceUsd) && c.priceUsd > 0 &&
+      Number.isFinite(c.priceSol) && c.priceSol > 0 &&
+      Number.isFinite(c.change1hPct) && Number.isFinite(c.change5mPct));
+
+    // Healthy discovery → reset the failure counter + record scan quality for
+    // the market-health proxy.
+    adaptiveState.discoveryFailures = 0;
+    adaptiveState.lastScanQuality = {
+      candidates: valid.length,
+      withLiquidity: valid.filter((c) => Number.isFinite(c.liquidityUsd) && c.liquidityUsd > 0).length
+    };
+
+    // Sampling universe = this scan's candidates + open positions.
+    sampleUniverse = new Set(valid.map((c) => c.mint));
+    for (const pos of portfolio.positions) sampleUniverse.add(pos.mint);
+
+    // Local 5m recovery (never the discovery API's value) + score.
+    for (const c of valid) {
+      const rec = compute5mRecovery(c.mint);
+      c.recoveryPct = rec.warming ? null : rec.pct;
+      c.recoveryStatus = rec.warming ? 'warming' : 'ok';
+      c.recoverySamples = rec.samples;
+      c.score = computeScore({
+        change1hPct: c.change1hPct,
+        recoveryPct: c.recoveryPct,
+        liquidityUsd: c.liquidityUsd,
+        volume24hUsd: c.volume24hUsd
+      });
+    }
+
+    log(`[SCAN #${portfolio.scans}] ${valid.length} real candidate(s)`);
+    for (const c of valid) {
+      const rec5 = c.recoveryStatus === 'warming'
+        ? `warming(${c.recoverySamples} samples)`
+        : `${sign(c.recoveryPct)}${c.recoveryPct.toFixed(2)}%`;
+      log(`  ${c.symbol} score=${c.score} 1h=${sign(c.change1hPct)}${c.change1hPct.toFixed(2)}% ` +
+        `5m=${rec5} price=${fmtUsd(c.priceUsd)} priceSOL=${c.priceSol.toFixed(12)} ` +
+        `liq=${fmtCompact(c.liquidityUsd)} vol=${fmtCompact(c.volume24hUsd)} src=${c.source}`);
+    }
+
+    // BUY pass — every gate must pass; NO TRADE on missing/uncertain data.
+    const ranked = valid.slice().sort((a, b) =>
+      (b.score - a.score) || ((b.recoveryPct || 0) - (a.recoveryPct || 0)));
+
+    // ---- Adaptive session policy + market-health gate (deterministic) -----
+    // V1 baseline when the policy is missing/expired: active, minScore 60,
+    // full position cap. Learned gates may only TIGHTEN (never loosen V1).
+    let eff = { mode: 'active', minScore: MIN_SCORE, maxBuys: MAX_POSITIONS, fresh: false, reason: 'adaptive disabled — V1 baseline' };
+    let health = null;
+    let buysThisSession = 0;
+    if (adaptiveEnabled()) {
+      eff = adaptivePolicy.effectiveGates(adaptiveState.policy, { maxPositions: MAX_POSITIONS });
+      health = computeMarketHealth();
+      buysThisSession = (adaptiveState.policy && adaptiveState.policy.buysThisSession) || 0;
+      const sz = (adaptiveState.policy && adaptiveState.policy.sizeMultiplier) != null ? adaptiveState.policy.sizeMultiplier : 1.0;
+      log(`[POLICY] mode=${eff.mode} minScore=${eff.minScore} maxBuys=${eff.maxBuys} regime=${currentRegime().regime} size=${sz}x health=${health.score}/100 (${health.status})${eff.fresh ? '' : ' — V1 fallback'}`);
+    }
+    const policyBlocked = eff.mode === 'watchOnly';
+    const healthBlocked = !!(health && health.gate);
+    if (healthBlocked) log(`[MARKET-HEALTH] gate active: ${health.reason} — blocking new entries this scan`);
+    const regimeNow = currentRegime().regime;
+
+    // ---- TradingAgents RESEARCH (advisory — see tradingagents-layer.js). ----
+    // Runs BEFORE the BUY pass so every candidate that may be bought already
+    // has a recorded research decision. It never gates, alters, or blocks the
+    // Circuit BUY pass; a research failure is isolated and ignored.
+    let taRows = [];
+    let taResearchByMint = null;
+    if (tradingAgents && tradingAgents.enabled() && (ranked.length || portfolio.positions.length)) {
+      try {
+        tradingAgents.tickCycleStart();
+        const taCtx = buildTradingAgentsContext(valid);
+        const cycle = tradingAgents.runCycle({
+          candidates: ranked.slice(0, config.tradingAgents.maxCandidatesPerCycle),
+          positions: portfolio.positions,
+          ctx: taCtx
+        });
+        taRows = cycle.rows || [];
+      } catch (err) {
+        pushError('TA', `research cycle failed: ${err.message}`);
+        taRows = [];
+      }
+    }
+
+    const tryCandidate = async (c) => {
+      c.decision = 'FILTER';
+      if (portfolio.positions.length >= MAX_POSITIONS) {
+        c.reason = 'max positions reached';
+      } else if (healthBlocked) {
+        c.reason = 'market health gate';
+      } else if (eff.maxBuys != null && buysThisSession >= eff.maxBuys) {
+        c.reason = 'session buy cap reached';
+      } else {
+        // Learned gates per cluster (regime|timeOfDay|liquidityClass) — V1 +
+        // session thresholds tightened by any PROMOTED gate.
+        const clusterKey = gatesLib.clusterKeyOf({
+          regime: regimeNow,
+          timeOfDay: perfLib.timeOfDayOf(c.fetchedAt || Date.now()),
+          liqClass: perfLib.liqClassOf(c.liquidityUsd)
+        });
+        const learned = gatesLib.effectiveGates(adaptiveState.gates, clusterKey, { gateConfidenceThreshold: config.adaptive.gateConfidenceThreshold });
+        c.adaptiveGates = learned.applied;
+        c.adaptiveMinScore = Math.max(eff.minScore, learned.gates.minScore);
+        const { min1h, max1h, min5m, max5m } = learned.gates;
+        if (c.score < c.adaptiveMinScore) { c.reason = `score below threshold (min ${c.adaptiveMinScore})`; }
+        else if (c.change1hPct <= min1h || c.change1hPct > max1h) { c.reason = `1h change outside range (${min1h}..${max1h})`; }
+        else if (c.recoveryStatus === 'warming') { c.reason = `5m recovery warming (${c.recoverySamples} samples)`; }
+        else if (c.recoveryPct < min5m || c.recoveryPct > max5m) { c.reason = `5m recovery outside range (${min5m}..${max5m})`; }
+        else if (portfolio.positions.some((p) => p.mint === c.mint)) { c.reason = 'already holding'; }
+        else {
+          const cd = inCooldown(c.mint);
+          if (cd > 0) { c.reason = `re-entry cooldown (${Math.round(cd / 1000)}s remaining)`; }
+          else if (portfolio.cashSol < (adaptiveEnabled() ? config.adaptive.maxTradeSizeSol : config.tradeSizeSol)) { c.reason = 'insufficient cash'; }
+          else {
+            // Fresh price at decision time — valid, fresh, real.
+            let info = null;
+            try {
+              const prices = await market.fetchTokenPrices([c.mint]);
+              info = prices.get(c.mint);
+            } catch (err) {
+              pushError('PRICE-FALLBACK', `price fetch failed for ${c.symbol}: ${err.message}`);
+            }
+            if (!info) {
+              c.reason = 'price unavailable';
+            } else {
+              const gate = evaluatePriceGate(info, maxPriceAgeMs);
+              if (!gate.ok) {
+                c.reason = gate.reason;
+              } else if (executePaperBuy(c, info)) {
+                c.decision = 'BUY';
+                c.reason = null;
+                buysThisSession += 1;
+              } else {
+                c.reason = 'buy rejected (accounting)';
+              }
+            }
+          }
+        }
+      }
+      if (c.decision === 'FILTER') log(`[FILTER] ${c.symbol} ${c.reason}`);
+    };
+
+    if (policyBlocked) {
+      log('[POLICY] watchOnly mode — scanning only, no entries this window');
+      for (const c of ranked) {
+        c.decision = 'FILTER';
+        c.reason = 'watchOnly mode — session policy blocks entries';
+      }
+    } else {
+      for (const c of ranked) {
+        if (eff.mode === 'selective' && c !== ranked[0]) {
+          c.decision = 'FILTER';
+          c.reason = 'selective mode — top candidate only';
+          log(`[FILTER] ${c.symbol} ${c.reason}`);
+          continue;
+        }
+        await tryCandidate(c);
+      }
+    }
+
+    // Commit the research decisions now that the Circuit BUY pass is done —
+    // each row records researchScore vs the real circuitDecision. Advisory
+    // warnings are logged beside decisions; they never gate anything.
+    if (taRows.length && tradingAgents) {
+      try {
+        for (const row of taRows) {
+          if (row.type !== 'candidate' || !row._cand) continue;
+          const d = row._cand.decision || 'FILTER';
+          row.circuitDecision = d === 'BUY' ? 'BUY' : 'FILTER';
+        }
+        tradingAgents.commit(taRows);
+        const topRow = taRows.find((r) => r.type === 'candidate');
+        if (topRow) {
+          log(`[TA] ${topRow.symbol} research=${topRow.researchScore} rec=${topRow.researchRecommendation} consensus=${topRow.consensus} risk=${topRow.riskLevel} dataQuality=${topRow.dataQuality} circuit=${topRow.circuitDecision} (mode=${config.tradingAgents.mode})`);
+        }
+        if (config.tradingAgents.mode === 'ADVISORY') {
+          for (const row of taRows) {
+            for (const w of (row.warnings || [])) log(`[TA] ${row.symbol} warning: ${w}`);
+          }
+        }
+        // Optional async LLM narrative on the top candidate (never blocking,
+        // never required — deterministic research stands on any failure).
+        const llmCfg = (config.adaptive && config.adaptive.llm) || {};
+        if (llmCfg.url && taRows.some((r) => r.type === 'candidate')) {
+          tradingAgents.enrichTopRow(taRows).catch(() => {});
+        }
+        // ADVISORY: attach research beside Circuit decisions in candidates.json.
+        if (config.tradingAgents.mode === 'ADVISORY') {
+          taResearchByMint = new Map();
+          for (const row of taRows) {
+            if (row.type !== 'candidate') continue;
+            const last = tradingAgents.lastResultFor(row.mint);
+            if (last) taResearchByMint.set(row.mint, last);
+          }
+        }
+      } catch (err) {
+        pushError('TA', `research commit failed: ${err.message}`);
+      }
+    }
+
+    // ---- Counterfactual outcome resolution (§5) -------------------------
+    // Attempt to resolve any previously recorded predictions whose
+    // time horizon has elapsed. Uses real market data only.
+    if (tradingAgents && tradingAgents.enabled()) {
+      try {
+        const cf = tradingAgents.getCounterfactual();
+        if (cf && typeof cf.resolveAll === 'function') {
+          const resolvePrice = (mint, targetTs) => {
+            /* Use the most recent price from local history samples. */
+            const h = history.get(mint);
+            if (!h || !h.samples || !h.samples.length) return null;
+            /* Find the sample closest to (but not after) the target time. */
+            let best = null;
+            for (const s of h.samples) {
+              if (s.ts <= targetTs && (!best || s.ts > best.ts)) best = s;
+            }
+            return best ? best.priceSol : null;
+          };
+          cf.resolveAll(resolvePrice, Date.now());
+        }
+      } catch (_) { /* best effort — resolution failure never blocks the scan */ }
+    }
+
+    // ---- ATLAS INTELLIGENCE RESEARCH (parallel, advisory; default SHADOW) ----
+    // Runs after the Circuit BUY pass so decisions carry the real circuitDecision.
+    // Never gates, alters, or blocks the Circuit V1 BUY/SELL path. Integrity
+    // snapshot is consumed (never duplicated) so ATLAS never researches a
+    // quarantined/invalid observation as a legitimate signal.
+    if (atlas && atlas.enabled() && ranked.length) {
+      try {
+        const atlasCtx = buildAtlasContext(valid);
+        const atlasCycle = atlas.runCycle({
+          candidates: ranked.slice(0, config.atlas.maxCandidatesPerCycle),
+          ctx: atlasCtx
+        });
+        if (atlasCycle.decisions && atlasCycle.decisions.length) {
+          const top = atlasCycle.decisions.find((r) => r.type === 'candidate');
+          if (top) {
+            log(`[ATLAS] ${top.symbol} research=${top.atlas.score} rec=${top.synthesis.researchRecommendation} consensus=${top.atlas.consensus} risk=${top.atlas.riskLevel} dataQuality=${top.atlas.dataQuality} V1=${top.v1.score} (mode=${config.atlas.mode})`);
+          }
+          // Log prediction lifecycle for each prediction created
+          for (const pred of atlasCycle.predictions) {
+            if (pred && pred.predictionId) {
+              log(`[ATLAS-PRED] id=${pred.predictionId} agent=${pred.agent} dir=${pred.direction} conf=${pred.confidence} mint=${pred.mint} ts=${pred.ts}`);
+            }
+          }
+        }
+        // Persist checkpoints + daily snapshots after each ATLAS cycle
+        if (typeof atlas.persistCheckpoint === 'function') {
+          try { atlas.persistCheckpoint(); } catch (_) { /* best effort */ }
+        }
+      } catch (err) {
+        pushError('ATLAS', `research cycle failed: ${err.message}`);
+      }
+    }
+
+    writeCandidatesFile(valid, taResearchByMint);
+  } catch (err) {
+    pushError('SCAN ERROR', `discovery scan failed: ${err.message}`);
+  } finally {
+    recalculate(portfolio);
+    persist();
+    recordEquityHistory();
+    writeHeartbeat('running');
+    discoveringActive = false;
+  }
+}
+
+function writeCandidatesFile(candidates, researchByMint) {
+  try {
+    atomicWriteJson(candidatesFile, {
+      scannedAt: Date.now(),
+      scan: portfolio.scans,
+      count: candidates.length,
+      openPositions: portfolio.positions.length,
+      maxPositions: MAX_POSITIONS,
+      candidates: candidates.map((c) => {
+        const research = researchByMint ? researchByMint.get(c.mint) : null;
+        return {
+          symbol: c.symbol,
+          mint: c.mint,
+          score: c.score,
+          change1hPct: c.change1hPct,
+          recoveryPct: c.recoveryPct,
+          recoveryStatus: c.recoveryStatus,
+          recoverySamples: c.recoverySamples,
+          priceUsd: c.priceUsd,
+          priceSol: c.priceSol,
+          liquidityUsd: c.liquidityUsd,
+          volume24hUsd: c.volume24hUsd,
+          source: c.source,
+          decision: c.decision,
+          reason: c.reason || null,
+          adaptiveMinScore: c.adaptiveMinScore != null ? c.adaptiveMinScore : null,
+          adaptiveGates: c.adaptiveGates && c.adaptiveGates.length ? c.adaptiveGates : null,
+          // ADVISORY mode only: research results beside the Circuit decision.
+          research: research ? {
+            score: research.researchScore,
+            recommendation: research.researchRecommendation,
+            consensus: research.consensus,
+            riskLevel: research.riskLevel,
+            dataQuality: research.dataQuality,
+            ts: research.ts
+          } : undefined
+        };
+      })
+    });
+  } catch (err) {
+    log(`WARN could not write candidates.json (${err.message})`);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Adaptive loops — agent-loop (session policy, ~90 min) + reflection
+ * (learning, ~4h). Both deterministic; the LLM hook is async + advisory.
+ * ------------------------------------------------------------------ */
+
+let agentLoopActive = false;
+let reflectionActive = false;
+
+function buildAgentLoopBrief({ metrics, regime, closed }) {
+  const lines = [];
+  lines.push(`Regime: ${regime.regime} (confidence ${Math.round((regime.confidence || 0) * 100)}%)`);
+  lines.push(`Reasoning: ${regime.reasoning}`);
+  lines.push(`7d trades: ${metrics.n}, win rate ${metrics.winRate}%, expectancy ${metrics.expectancyPct}%`);
+  lines.push(`Loss streak: ${metrics.lossStreak}, max drawdown ${metrics.maxDrawdownPct}%`);
+  lines.push(`Open positions: ${portfolio.positions.length}/${MAX_POSITIONS}`);
+  lines.push(`Session buys: ${(adaptiveState.policy && adaptiveState.policy.buysThisSession) || 0}`);
+  lines.push('PAPER ONLY — wallet/signer/broadcast disabled. Reply with JSON: mode (active|selective|watchOnly), minScore (60-90), maxBuys (0-3), reason.');
+  return lines.join('\n');
+}
+
+/** Evaluate any experiments currently in SHADOW (hypothetical replay). */
+function evaluateShadowExperiments(closed) {
+  const results = [];
+  const list = experiments.loadExperiments(dataDir);
+  for (const exp of list) {
+    if (exp.state !== 'SHADOW') continue;
+    try {
+      const r = experiments.evaluateShadow(dataDir, exp, closed, {
+        shadowMinTrades: config.adaptive.shadowMinTrades,
+        autoApply: config.adaptive.autoApply,
+        tolerances: {}
+      });
+      results.push({ id: exp.id, state: r.state });
+    } catch (err) {
+      pushError('SHADOW', `shadow evaluation failed for ${exp.id}: ${err.message}`);
+    }
+  }
+  return results;
+}
+
+async function agentLoopTick() {
+  if (!adaptiveEnabled()) return;
+  if (agentLoopActive) return;
+  agentLoopActive = true;
+  try {
+    const now = Date.now();
+    const closed = closedTrades();
+    const weekTrades = closed.filter((t) => t.exitTs >= now - 7 * perfLib.MS_DAY);
+    const metrics = perfLib.computeMetrics(weekTrades);
+
+    // 1. Regime detection (deterministic, persisted with TTL).
+    const regime = regimeLib.detectAndSave(dataDir, closed, config.adaptive, { nowMs: now });
+    adaptiveState.regimeState = Object.assign({}, regime, { validUntil: regime.validUntil, detectedAt: regime.detectedAt });
+
+    // 2. Market health (refresh inputs).
+    computeMarketHealth();
+
+    // 3. Deterministic session policy (regime + metrics + streak breaker).
+    const current = adaptivePolicy.loadPolicy(dataDir);
+    const versions = experiments.loadVersions(dataDir, { maxPositions: MAX_POSITIONS });
+    const baseline = experiments.effectiveBaseline(versions, { maxPositions: MAX_POSITIONS });
+    let policy = adaptivePolicy.buildSessionPolicy({
+      metrics,
+      regime,
+      current,
+      cfg: {
+        maxPositions: MAX_POSITIONS,
+        strategyVersion: baseline.versionId,
+        sizing: config.adaptive.sizing,
+        lossBreakerThreshold: config.adaptive.lossBreakerThreshold
+      },
+      trades: closed
+    });
+
+    // 4. Optional async LLM hook — schema-validated, clamped, advisory only.
+    const llmCfg = config.adaptive.llm || {};
+    if (llmCfg.url) {
+      const brief = buildAgentLoopBrief({ metrics, regime, closed });
+      const llmOut = await llmAdapter.maybeLLMPolicy({
+        url: llmCfg.url,
+        key: llmCfg.key,
+        model: llmCfg.model,
+        brief,
+        timeoutMs: parseInt(process.env.CIRCUIT_LLM_TIMEOUT_MS, 10) || 30000
+      });
+      if (llmOut && llmOut.policy) {
+        policy = Object.assign({}, policy, llmOut.policy, { source: 'llm' });
+        log(`[AGENT-LOOP] LLM policy override accepted (${llmOut.errors && llmOut.errors.length ? llmOut.errors.join('; ') : 'validated'})`);
+      } else {
+        log('[AGENT-LOOP] LLM unavailable or invalid output — using deterministic policy');
+      }
+    }
+
+    policy.lastAgentLoopAt = now;
+    policy.lastReflectionAt = current.lastReflectionAt || adaptiveState.lastReflectionAt;
+    const changed = adaptivePolicy.policyChanged(current, policy);
+    adaptiveState.policy = adaptivePolicy.savePolicy(dataDir, policy, config.adaptive.policyTtlMs);
+    adaptiveState.lastAgentLoopAt = now;
+
+    // 5. Evaluate shadow experiments against real closed trades.
+    const shadowResults = evaluateShadowExperiments(closed);
+
+    log(`[AGENT-LOOP] ${changed ? 'new session policy' : 'refreshed'} mode=${adaptiveState.policy.mode} minScore=${adaptiveState.policy.minScore} maxBuys=${adaptiveState.policy.maxBuys} regime=${regime.regime} (conf ${Math.round((regime.confidence || 0) * 100)}%) source=${adaptiveState.policy.source}` +
+      (shadowResults.length ? ' · shadow: ' + shadowResults.map((s) => `${s.id}=${s.state}`).join(',') : ''));
+  } catch (err) {
+    pushError('AGENT-LOOP', `agent loop failed: ${err.message}`);
+  } finally {
+    agentLoopActive = false;
+  }
+}
+
+async function reflectionTick() {
+  if (!adaptiveEnabled()) return;
+  if (reflectionActive) return;
+  reflectionActive = true;
+  try {
+    const now = Date.now();
+    const closed = closedTrades();
+    const report = reflectionEngine.runReflection({
+      dataDir,
+      ledgerRows: perfLib.readLedgerFile(tradesFile),
+      cfg: {
+        maxPositions: MAX_POSITIONS,
+        startingCapitalSol: portfolio.startingCapitalSol,
+        minGradeSamples: config.adaptive.minGradeSamples,
+        backtestMinTrades: config.adaptive.backtestMinTrades,
+        shadowMinTrades: config.adaptive.shadowMinTrades,
+        gateClusterMinN: config.adaptive.minSamples,
+        autoApply: config.adaptive.autoApply
+      },
+      nowMs: now,
+      regime: currentRegime()
+    });
+    adaptiveState.lastReflectionAt = now;
+    try {
+      const p = adaptivePolicy.loadPolicy(dataDir);
+      adaptivePolicy.savePolicy(dataDir, Object.assign({}, p, { lastReflectionAt: now }), config.adaptive.policyTtlMs);
+    } catch (_) { /* best effort */ }
+    reflectionEngine.prune(dataDir, 30);
+
+    const shadowResults = evaluateShadowExperiments(closed);
+
+    log(`[REFLECT] graded=${report.graded.length} lessons=${report.lessons.length} recs=${report.recommendations.length} experiments=${report.experiments.length} rolledBack=${report.rolledBack.length} closed=${report.closedTradeCount}` +
+      (shadowResults.length ? ' · shadow: ' + shadowResults.map((s) => `${s.id}=${s.state}`).join(',') : ''));
+    for (const g of report.graded) {
+      log(`[REFLECT] grade ${g.parameter} ${g.oldValue}→${g.newValue} = ${g.grade} (n=${g.tradeSample}, ΔWR ${g.deltaWinRatePts}pts)`);
+    }
+    for (const rb of report.rolledBack) {
+      log(`[REFLECT][ROLLBACK] ${rb.id} → ${rb.state} (${rb.rollbackGrade})`);
+    }
+  } catch (err) {
+    pushError('REFLECT', `reflection failed: ${err.message}`);
+  } finally {
+    reflectionActive = false;
+  }
+}
+
+async function runAgentLoop() {
+  try { await agentLoopTick(); } catch (err) { pushError('AGENT-LOOP', String(err.message)); }
+}
+async function runReflection() {
+  try { await reflectionTick(); } catch (err) { pushError('REFLECT', String(err.message)); }
+}
+
+/* ------------------------------------------------------------------ *
+ * Main.
+ * ------------------------------------------------------------------ */
+
+function printBanner() {
+  logBlock(
+`================================================
+ REAL-MARKET SOLANA PAPER TRADER
+================================================
+Data directory : ${dataDir}
+Starting SOL   : ${config.startingCapitalSol}
+Trade size     : ${config.tradeSizeSol} SOL
+Max positions  : ${MAX_POSITIONS}
+Discovery      : ${config.discoveryIntervalMs} ms
+Monitor        : ${config.scanIntervalMs} ms
+5m recovery    : >= ${MIN_5M_RECOVERY_PCT}%
+Re-entry cool. : ${cooldownMs} ms
+Wallet         : ${WALLET_STATE}
+Signer         : ${SIGNER_STATE}
+Broadcast      : ${BROADCAST_STATE}
+Market         : ${MARKET_LABEL}
+Execution      : ${EXECUTION_LABEL}
+Adaptive loop  : ${config.adaptive.enabled ? 'every ' + Math.round(config.adaptive.agentLoopIntervalMs / 60000) + ' min (mode/minScore/maxBuys)' : 'DISABLED (pure V1)'}
+Reflection     : ${config.adaptive.enabled ? 'every ' + (config.adaptive.reflectIntervalMs / 3600000) + ' h (learning + approvals)' : 'DISABLED'}
+Adaptive size  : ${config.adaptive.enabled ? config.adaptive.minTradeSizeSol + '..' + config.adaptive.maxTradeSizeSol + ' SOL (auto)' : 'fixed ' + config.tradeSizeSol + ' SOL'}
+TradingAgents  : ${config.tradingAgents.mode} (advisory research)
+================================================`);
+}
+
+function main() {
+  fs.mkdirSync(dataDir, { recursive: true });
+
+  log('==========================================');
+  log(`${AGENT_NAME} agent starting (mode=${MODE}, paper=${PAPER_TRADING}, custody=${CUSTODY})`);
+  log('[STARTUP] real-market Solana paper trader — paper only, wallet/signer/broadcast disabled');
+  if (process.env.CIRCUIT_SIGNER_URL) {
+    log('CIRCUIT_SIGNER_URL is set but IGNORED — this agent never signs or executes real trades');
+  } else {
+    log('CIRCUIT_SIGNER_URL not set — trades remain paper (no signer, no broadcast)');
+  }
+
+  config = loadConfig();
+
+  printBanner();
+
+  acquireLock();
+  log(`[LOCK] acquired agent.lock (pid ${process.pid})`);
+
+  // Market data: real by default; optional Circuit API primary; mock only for tests.
+  market = marketDataLib.createMarketData({
+    circuitApiUrl: process.env.CIRCUIT_PRICE_API_URL || null,
+    mockFile: process.env.CIRCUIT_MOCK_MARKET_FILE || null,
+    maxPriceAgeMs,
+    solPriceCacheMs: 30000,
+    onEvent: (tag, msg) => {
+      log(`[${tag}] ${msg}`);
+      // Count source-divergence rejections reported by the market-data layer
+      // (existing Circuit/Dex divergence protection) in the integrity state.
+      if (tag === 'FILTER' && typeof msg === 'string' && msg.indexOf('price divergence') >= 0) {
+        try { if (priceIntegrity) priceIntegrity.noteSourceDivergence(msg); } catch (_) { /* best effort */ }
+      }
+    }
+  });
+  log(`[STARTUP] market data provider: ${market.primarySource}${market.fallbackSource ? ` (fallback: ${market.fallbackSource})` : ''} (mode=${market.mode})`);
+  log(`[STARTUP] data dir: ${dataDir}`);
+
+  portfolio = loadPortfolio();
+  recalculate(portfolio);
+  persist();
+  writeMeta();
+  backfillEquityHistory();
+  writeHeartbeat('starting');
+
+  refreshSolPrice().then(() => {
+    if (lastSolPriceUsd) log(`[STARTUP] real SOL price: $${lastSolPriceUsd}`);
+  });
+
+  // Price-integrity layer (below the strategy — see price-integrity.js).
+  // Loads persisted state (last valid price/pair/source, quarantines,
+  // counters) and re-anchors any positions that are still open.
+  priceIntegrity = integrityLib.createPriceIntegrity({
+    dataDir,
+    maxAgeMs: maxPriceAgeMs,
+    maxDivergencePct,
+    log: (msg) => log(`[PRICE-INTEGRITY] ${msg}`)
+  });
+  for (const pos of portfolio.positions) {
+    try { priceIntegrity.notePositionOpened(pos, { preserve: true }); } catch (_) { /* best effort */ }
+  }
+  log(`[STARTUP] price integrity enabled — ${Object.keys(priceIntegrity.state().mints).length} open position(s) anchored`);
+
+  // TradingAgents RESEARCH layer — additive + advisory (default SHADOW). It
+  // reuses the same optional LLM endpoint as the adaptive layer and never
+  // gates the Circuit V1 execution path.
+  tradingAgents = tradingAgentsLib.createTradingAgents({
+    dataDir,
+    mode: config.tradingAgents.mode,
+    maxCandidatesPerCycle: config.tradingAgents.maxCandidatesPerCycle,
+    maxDebateRounds: config.tradingAgents.maxDebateRounds,
+    researchTimeoutMs: config.tradingAgents.researchTimeoutMs,
+    cacheTtlMs: config.tradingAgents.cacheTtlMs,
+    llm: (config.adaptive && config.adaptive.llm) || {},
+    log: (msg) => log(`[TA] ${msg}`)
+  });
+  log(`[STARTUP] TradingAgents research layer mode=${tradingAgents.mode()} (${tradingAgents.enabled() ? 'research active — Circuit V1 execution unchanged' : 'disabled'})`);
+
+  // ATLAS INTELLIGENCE LAYER — parallel, advisory, research-grade (default SHADOW).
+  // Consumes the existing price-integrity snapshot so it never receives
+  // quarantined/invalid observations. Fails safe when the LLM endpoint is down;
+  // deterministic specialists still run and LLM agents report UNAVAILABLE.
+  try {
+    atlas = require('./atlas/atlas-engine.js').createAtlasEngine({
+      dataDir,
+      mode: config.atlas.mode,
+      maxCandidatesPerCycle: config.atlas.maxCandidatesPerCycle,
+      researchTimeoutMs: config.atlas.researchTimeoutMs,
+      cacheTtlMs: config.atlas.cacheTtlMs,
+      llm: (config.adaptive && config.adaptive.llm) || {},
+      integritySnap: priceIntegrity ? priceIntegrity.snapshot() : null,
+      log: (msg) => log(`[ATLAS] ${msg}`)
+    });
+    log(`[STARTUP] ATLAS intelligence layer mode=${atlas.mode()} (${atlas.enabled() ? 'research active — V1 execution unchanged' : 'disabled'})`);
+  } catch (err) {
+    pushError('ATLAS', `atlas engine init failed: ${err.message}`);
+    atlas = null;
+    log(`[STARTUP] ATLAS disabled — init failed (${err.message})`);
+  }
+
+  // Adaptive layer startup: load persisted policy / regime / gates + schedule
+  // the agent-loop (~90 min) and reflection (~4h) cycles.
+  const adaptiveTimers = [];
+  if (adaptiveEnabled()) {
+    adaptiveState.policy = adaptivePolicy.loadPolicy(dataDir);
+    adaptiveState.regimeState = regimeLib.loadRegimeState(dataDir);
+    adaptiveState.gates = gatesLib.loadGates(dataDir);
+    adaptiveState.lastAgentLoopAt = (adaptiveState.policy && adaptiveState.policy.lastAgentLoopAt) || null;
+    adaptiveState.lastReflectionAt = (adaptiveState.policy && adaptiveState.policy.lastReflectionAt) || null;
+
+    const loopMs = config.adaptive.agentLoopIntervalMs;
+    const reflectMs = config.adaptive.reflectIntervalMs;
+    // First agent-loop run: ~5 min before the policy expires (or soon if it is
+    // overdue — mirrors upstream's startup recovery scheduling).
+    let firstLoopMs;
+    if (adaptiveState.policy && adaptiveState.policy.expiresAt &&
+        Date.now() < new Date(adaptiveState.policy.expiresAt).getTime()) {
+      firstLoopMs = Math.max(2000, Math.min(loopMs,
+        new Date(adaptiveState.policy.expiresAt).getTime() - Date.now() - 5 * 60 * 1000));
+    } else {
+      firstLoopMs = Math.min(5000, Math.max(1000, Math.round(loopMs / 4)));
+    }
+    // First reflection run: resume from the last one (skip a full cycle if it
+    // completed within the last half-interval — upstream behavior).
+    let firstReflectMs;
+    if (adaptiveState.lastReflectionAt && Date.now() - adaptiveState.lastReflectionAt < reflectMs / 2) {
+      firstReflectMs = Math.max(5000, reflectMs - (Date.now() - adaptiveState.lastReflectionAt));
+    } else {
+      firstReflectMs = Math.min(10000, Math.max(2000, Math.round(reflectMs / 4)));
+    }
+    adaptiveTimers.push(setTimeout(() => {
+      runAgentLoop().then(() => {
+        adaptiveTimers.push(setInterval(() => { runAgentLoop(); }, loopMs));
+      });
+    }, firstLoopMs));
+    adaptiveTimers.push(setTimeout(() => {
+      runReflection().then(() => {
+        adaptiveTimers.push(setInterval(() => { runReflection(); }, reflectMs));
+      });
+    }, firstReflectMs));
+    log(`[ADAPTIVE] enabled — agent-loop every ${Math.round(loopMs / 60000)} min (first in ${Math.round(firstLoopMs / 1000)}s), reflection every ${(reflectMs / 3600000).toFixed(1)} h (first in ${Math.round(firstReflectMs / 1000)}s), autoApply=${config.adaptive.autoApply}`);
+  } else {
+    log('[ADAPTIVE] disabled (CIRCUIT_ADAPTIVE_DISABLE=1) — pure V1 baseline');
+  }
+
+  // Loops: discovery (scans) → sampling (history) → monitoring (positions).
+  const tDiscovery = setTimeout(runDiscovery, 1000);
+  const iDiscovery = setInterval(runDiscovery, config.discoveryIntervalMs);
+  const iSample = setInterval(() => { sampleOnce().catch(() => {}); }, config.sampleIntervalMs);
+  const iMonitor = setInterval(() => { monitorOnce().catch(() => {}); }, config.scanIntervalMs);
+  const iHeartbeat = setInterval(() => writeHeartbeat('running'), Math.min(config.scanIntervalMs, 10000));
+
+  let shuttingDown = false;
+  function shutdown(signal) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    log(`[SHUTDOWN] ${signal} received — persisting state and stopping`);
+    try {
+      clearTimeout(tDiscovery);
+      clearInterval(iDiscovery);
+      clearInterval(iSample);
+      clearInterval(iMonitor);
+      clearInterval(iHeartbeat);
+      for (const t of adaptiveTimers) { try { clearTimeout(t); clearInterval(t); } catch (_) { /* ignore */ } }
+      recalculate(portfolio);
+      persist();
+      if (priceIntegrity) priceIntegrity.persist();
+      if (tradingAgents) tradingAgents.persistMetrics();
+      try {
+        if (tradingAgents) {
+          const cf = tradingAgents.getCounterfactual();
+          if (cf && typeof cf.resolveAll === 'function') {
+            const resolvePrice = (mint, targetTs) => {
+              const h = history.get(mint);
+              if (!h || !h.samples || !h.samples.length) return null;
+              let best = null;
+              for (const s of h.samples) {
+                if (s.ts <= targetTs && (!best || s.ts > best.ts)) best = s;
+              }
+              return best ? best.priceSol : null;
+            };
+            cf.resolveAll(resolvePrice, Date.now());
+          }
+        }
+      } catch (_) { /* best effort on shutdown */ }
+      writeHeartbeat('stopped');
+      releaseLock();
+      log('[SHUTDOWN] portfolio persisted, heartbeat=stopped, lock released — bye');
+    } catch (err) {
+      log(`ERROR during shutdown: ${err.message}`);
+    }
+    process.exit(0);
+  }
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  // Graceful stop over IPC (used by the test harness / ops):
+  process.on('message', (m) => {
+    if (m && m.type === 'shutdown') shutdown('IPC-SHUTDOWN');
+  });
+  process.on('exit', () => releaseLock());
+}
+
+async function runDiscovery() {
+  try { await discoveryOnce(); } catch (err) { pushError('SCAN ERROR', String(err.message)); }
+}
+
+// Config/state are module-level so the accounting helpers stay simple; they
+// are only initialized inside main(). Running `node agentd.js` calls main().
+let config = null;
+
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  AGENT_NAME,
+  MAX_POSITIONS,
+  STOP_LOSS_PCT,
+  TAKE_PROFIT_PCT,
+  MIN_5M_RECOVERY_PCT,
+  MAX_5M_RECOVERY_PCT,
+  MIN_1H_CHANGE_PCT,
+  MAX_1H_CHANGE_PCT,
+  MIN_SCORE,
+  newPortfolio,
+  recalculate,
+  computeScore,
+  compute5mRecoveryFromSamples,
+  evaluatePriceGate,
+  loadConfig,
+  isValidSolanaAddress: marketDataLib.isValidSolanaAddress,
+  isValidPrice: marketDataLib.isValidPrice,
+  priceAgeMs: marketDataLib.priceAgeMs,
+  comparePrices: marketDataLib.comparePrices,
+  // Adaptive layer (exposed for tests):
+  adaptivePolicy,
+  regimeLib,
+  gatesLib,
+  perfLib,
+  experiments,
+  reflectionEngine,
+  llmAdapter,
+  healthLib,
+  agentLoopTick,
+  reflectionTick,
+  computeMarketHealth,
+  closedTrades
+};

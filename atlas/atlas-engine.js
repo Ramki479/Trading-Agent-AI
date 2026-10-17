@@ -1,0 +1,668 @@
+#!/usr/bin/env node
+/**
+ * atlas/atlas-engine.js — ATLAS research engine.
+ *
+ * Runs one cycle of the staged pipeline for top candidates + open positions.
+ * Emits:
+ *   - decision objects (research metadata, NOT execution)
+ *   - predictions (via prediction journal)
+ *
+ * Persistence: decisions go to atlas-decisions.jsonl (parallel to
+ * tradingagents-decisions.jsonl but ATLAS-specific).
+ *
+ * ATLAS is ADVISORY ONLY. It never authorizes execution.
+ */
+
+'use strict';
+
+const path = require('path');
+const fs = require('fs');
+const { AtlasDb, PREDICTIONS_FILE } = require('./db.js');
+const { createPredictionJournl, VERSION, PROMPT_VERSION } = require('./prediction-journal.js');
+const { integrityFor } = require('./integrity-iface.js');
+const { rank, integrityFilter, lightweightScore, cacheKey, integrityFor: _iFor } = require('./stage-pipeline.js');
+const { analyze: tech } = require('./agents/technical.js');
+const { analyze: momentum } = require('./agents/momentum.js');
+const { analyze: vol } = require('./agents/volatility.js');
+const { analyze: liq } = require('./agents/liquidity.js');
+const { analyze: regime } = require('./agents/regime.js');
+const { analyze: sentiment } = require('./agents/sentiment.js');
+const { analyze: solana } = require('./agents/solana.js');
+const { analyze: onchain } = require('./agents/onchain.js');
+const { analyze: tokenQuality } = require('./agents/token-quality.js');
+const { analyze: manipulation } = require('./agents/manipulation.js');
+const { analyze: bull } = require('./agents/bull.js');
+const { analyze: bear } = require('./agents/bear.js');
+const { analyze: riskOfficer } = require('./agents/risk-officer.js');
+const { analyze: synthesis } = require('./agents/synthesis.js');
+const { dataQuality: evidenceDq, evidenceEntry } = require('./evidence.js');
+const { evaluate: evaluateOutcome } = require('./outcome-engine.js');
+const calibrationLib = require('./calibration.js');
+const abPaperLib = require('./ab-paper.js');
+const statsLib = require('./statistics.js');
+const { analyze: disagreement } = require('./disagreement.js');
+const { validate } = require('./schemas.js');
+const clamp = (n, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, Number.isFinite(n) ? n : 0));
+
+const DECISIONS_FILE = 'atlas-decisions.jsonl';
+const AGENT_ORDER = [
+  'technical', 'momentum', 'volatility', 'liquidity', 'regime', 'sentiment',
+  'solana', 'onchain', 'tokenQuality', 'manipulation'
+];
+
+const DECISION_AGENTS = {
+  technical: { fn: tech, llm: false },
+  momentum: { fn: momentum, llm: false },
+  volatility: { fn: vol, llm: false },
+  liquidity: { fn: liq, llm: false },
+  regime: { fn: regime, llm: false },
+  sentiment: { fn: sentiment, llm: false },
+  solana: { fn: solana, llm: false },
+  onchain: { fn: onchain, llm: false },
+  tokenQuality: { fn: tokenQuality, llm: false },
+  manipulation: { fn: manipulation, llm: false },
+  bull: { fn: bull, llm: true },
+  bear: { fn: bear, llm: true },
+  risk: { fn: riskOfficer, llm: true },
+  synthesis: { fn: synthesis, llm: true }
+};
+
+/** Read-only canonical ATLAS agent list for dashboard/UI use.
+ *  Derived from DECISION_AGENTS so the dashboard always reflects the
+ *  currently implemented ATLAS specialists. Defensive frozen copy.
+ */
+const AGENTS = Object.freeze([
+  ...new Set([
+    'technical', 'momentum', 'volatility', 'liquidity', 'regime',
+    'sentiment', 'solana', 'onchain', 'tokenQuality', 'manipulation',
+    'bull', 'bear', 'risk', 'synthesis'
+  ])
+]);
+
+function createAtlasEngine(options = {}) {
+  const dataDir = options.dataDir || process.cwd();
+  const db = new AtlasDb(dataDir);
+  const journal = createPredictionJournl(db);
+  const mode = options.mode || 'SHADOW';
+  const enabled = mode !== 'OFF';
+  const maxCandidates = Math.max(1, Math.min(10, options.maxCandidatesPerCycle || 5));
+  const cacheTtlMs = Math.max(0, options.cacheTtlMs || 60000);
+  const llmCfg = (options.llm && typeof options.llm === 'object') ? options.llm : {};
+  const log = typeof options.log === 'function' ? options.log : () => {};
+  const integritySnap = options.integritySnap || null;
+  const integrityForFn = options.integrityForFn || ((snap, mint) => integrityFor(snap || null, mint));
+  const universe = options.universe || {};
+
+  const cache = new Map();
+  let state = {
+    mode,
+    enabled,
+    lastRunAt: null,
+    cycles: 0,
+    counters: { candidatesResearched: 0, decisionsLogged: 0, llmCalls: 0, llmFails: 0 }
+  };
+
+  // Confidence calibration state (persisted)
+  let calibration = calibrationLib.emptyCalibration();
+  try {
+    const persisted = db.readJson ? db.readJson('atlas-calibration.json') : null;
+    if (persisted && persisted.buckets) calibration = persisted;
+  } catch (_) {}
+
+  // A/B paper mode (persisted)
+  const abPaper = abPaperLib.createABPaper(db);
+
+  // Statistics engine (checkpoints, matched samples, bootstrap CI)
+  const checkpoints = statsLib.createCheckpoints(db);
+  const dailySnapshots = statsLib.createDailySnapshots(db);
+
+  function appendDecision(obj) {
+    const f = path.join(dataDir, DECISIONS_FILE);
+    try {
+      fs.appendFileSync(f, JSON.stringify(obj) + '\n');
+    } catch (_) { /* best effort */ }
+  }
+
+  function runCycle({ candidates = [], positions = [], ctx = {}, now } = {}) {
+    if (!enabled) return { decisions: [], predictions: [], summary: null };
+    const ts = now != null ? now : Date.now();
+    state.lastRunAt = ts;
+    state.cycles = state.cycles + 1;
+
+    const targets = [];
+    for (const c of (Array.isArray(candidates) ? candidates : []).slice(0, maxCandidates)) {
+      if (cache.get(cacheKey('candidate', c.mint, c.pairAddress, c.dex, c.ts || ts)) && ts - cache.get(cacheKey('candidate', c.mint, c.pairAddress, c.dex, c.ts || ts)).ts < cacheTtlMs) continue;
+      targets.push({ type: 'candidate', candidate: c, ts: c.ts || ts });
+    }
+    for (const p of (Array.isArray(positions) ? positions : [])) {
+      if (cache.get(cacheKey('position', p.mint, p.pairAddress, p.dex, p.ts || ts)) && ts - cache.get(cacheKey('position', p.mint, p.pairAddress, p.dex, p.ts || ts)).ts < cacheTtlMs) continue;
+      targets.push({ type: 'position', candidate: positionToCandidate(p), ts: p.ts || ts, _isPosition: true, position: p });
+    }
+    if (!targets.length) return { decisions: [], predictions: [], summary: null };
+
+    const decisions = [];
+    const predictions = [];
+
+    for (const target of targets) {
+      const cand = target.candidate;
+      if (!cand || !cand.mint) continue;
+      const tsCand = target.ts || ts;
+      const integrity = integrityForFn((ctx && ctx.integrity) || integritySnap, cand.mint);
+      const dq = integrity.dataQuality === 'suspicious' || integrity.dataQuality === 'fail' ? 'suspicious' : (integrity.dataQuality === 'quarantined' ? 'suspicious' : 'ok');
+
+      // Clean candidate input for analysts
+      const candidateInput = Object.assign({}, cand, {
+        integrity,
+        history: (ctx.historyByMint && ctx.historyByMint[cand.mint]) || { samples: [], warming: !!cand.recoveryStatus },
+        market: ctx.market || {},
+        metrics: ctx.metrics || {},
+        universe: universe,
+        solPriceUsd: ctx.market && ctx.market.solPriceUsd,
+        tradeSizeSol: ctx.tradeSizeSol || 0.05
+      });
+
+    const agentOutputs = {};
+
+    // Stage 1-2: deterministic specialists (all, for every candidate that passes integrity)
+    for (const name of AGENT_ORDER) {
+        const agent = DECISION_AGENTS[name];
+        try {
+          agentOutputs[name] = agent.fn(candidateInput);
+        } catch (err) {
+          agentOutputs[name] = { agent: name, candidate: cand.symbol || '', timestamp: tsCand, direction: 'unknown', confidence: 0, score: 0, thesis: 'analyst error: ' + (err && err.message ? err.message : 'unknown'), evidence: [], risks: ['analyst_unavailable'], invalidatingConditions: [], prediction: { expectedMovePct: 0, probabilityUp: 0, probabilityDown: 0 }, dataQuality: dq, unavailable: true };
+        }
+      }
+
+      // Stage 3-5: LLM agents (bull, bear, risk, synthesis) — fail safe if no LLM
+      const bullOut = runLLMAgent('bull', () => DECISION_AGENTS.bull.fn(Object.assign({}, candidateInput, {
+        technical: agentOutputs.technical,
+        quant: agentOutputs.quant || agentOutputs.technical,
+        sentiment: agentOutputs.sentiment,
+        market: agentOutputs.regime
+      })), llmCfg, log);
+      const bearOut = runLLMAgent('bear', () => DECISION_AGENTS.bear.fn(Object.assign({}, candidateInput, {
+        technical: agentOutputs.technical,
+        quant: agentOutputs.quant || agentOutputs.technical,
+        market: agentOutputs.regime,
+        metrics: ctx.metrics || {},
+        integrity
+      })), llmCfg, log);
+      const riskOut = runLLMAgent('risk', () => DECISION_AGENTS.risk.fn(Object.assign({}, candidateInput, {
+        technical: agentOutputs.technical,
+        momentum: agentOutputs.momentum,
+        volatility: agentOutputs.volatility,
+        liquidity: agentOutputs.liquidity,
+        regime: agentOutputs.regime,
+        sentiment: agentOutputs.sentiment,
+        solana: agentOutputs.solana,
+        onchain: agentOutputs.onchain,
+        tokenQuality: agentOutputs.tokenQuality,
+        manipulation: agentOutputs.manipulation,
+        bull: bullOut,
+        bear: bearOut,
+        integrity,
+        metrics: ctx.metrics || {},
+        market: agentOutputs.regime,
+        disagreement: disagreementFor(agentOutputs)
+      })), llmCfg, log);
+      const synthOut = runLLMAgent('synthesis', () => DECISION_AGENTS.synthesis.fn(Object.assign({}, candidateInput, {
+        technical: agentOutputs.technical,
+        quant: agentOutputs.quant || agentOutputs.technical,
+        sentiment: agentOutputs.sentiment,
+        market: agentOutputs.regime,
+        bull: bullOut,
+        bear: bearOut,
+        risk: riskOut, // risk-officer output
+        integrity,
+        score: Number.isFinite(cand.score) ? cand.score : null
+      })), llmCfg, log);
+
+      agentOutputs.bull = bullOut;
+      agentOutputs.bear = bearOut;
+      agentOutputs.risk = riskOut;
+      agentOutputs.synthesis = synthOut;
+
+      const decision = buildDecision(cand, target.type, integrity, agentOutputs, ctx, tsCand);
+
+      // Record predictions for each directional agent
+      const predAgents = ['technical', 'momentum', 'volatility', 'liquidity', 'regime', 'sentiment', 'solana', 'onchain', 'tokenQuality', 'manipulation', 'bull', 'bear', 'synthesis'];
+      for (const name of predAgents) {
+        const out = agentOutputs[name];
+        if (out && out.direction && out.direction !== 'unknown' && out.prediction) {
+          const rec = journal.record(name, out.prediction, {
+            candidate: cand,
+            ts: tsCand,
+            direction: out.direction,
+            confidence: Number.isFinite(out.confidence) ? out.confidence : (Number.isFinite(out.score) ? out.score : 0),
+            timeHorizon: out.timeHorizon || '15m',
+            thesis: out.thesis || '',
+            evidence: out.evidence || [],
+            dataQuality: out.dataQuality || dq,
+            marketRegime: (ctx.market && ctx.market.regime) || null
+          });
+          predictions.push(rec);
+        }
+      }
+
+      // Record synthesis-level prediction (research recommendation as a directional prediction)
+      if (synthOut && synthOut.researchRecommendation && synthOut.researchRecommendation !== 'HOLD') {
+        const rec = journal.record('synthesis', {
+          expectedMovePct: synthOut.researchScore ? (synthOut.researchScore - 50) : 0,
+          probabilityUp: synthOut.researchRecommendation === 'BUY' ? 0.6 : 0.4,
+          probabilityDown: synthOut.researchRecommendation === 'AVOID' ? 0.6 : 0.4
+        }, {
+          candidate: cand,
+          ts: tsCand,
+          direction: synthOut.researchRecommendation === 'BUY' ? 'bullish' : 'bearish',
+          confidence: Number.isFinite(synthOut.researchConfidence) ? synthOut.researchConfidence : synthOut.researchScore || 0,
+          timeHorizon: '15m',
+          thesis: 'ATLAS research recommendation: ' + synthOut.researchRecommendation,
+          evidence: [],
+          dataQuality: synthOut.dataQuality || dq,
+          marketRegime: (ctx.market && ctx.market.regime) || null
+        });
+        predictions.push(rec);
+      }
+
+      decisions.push(decision);
+      state.latest = decision;
+      state.counters.candidatesResearched += 1;
+      state.counters.decisionsLogged += 1;
+      cache.set(cacheKey('candidate', cand.mint, cand.pairAddress, cand.dex, tsCand), { ts: tsCand, row: decision });
+    }
+
+    return { decisions, predictions, summary: { decisions: decisions.length, predictions: predictions.length, ts } };
+  }
+
+  function positionToCandidate(pos) {
+    return {
+      symbol: pos.symbol,
+      mint: pos.mint,
+      pairAddress: pos.pairAddress || null,
+      dex: pos.dex || null,
+      priceUsd: Number.isFinite(pos.currentPriceUsd) ? pos.currentPriceUsd : null,
+      priceSol: Number.isFinite(pos.currentPriceSol) ? pos.currentPriceSol : null,
+      liquidityUsd: null,
+      volume24hUsd: null,
+      change1hPct: null,
+      change5mPct: null,
+      recoveryPct: null,
+      recoveryStatus: 'unknown',
+      score: Number.isFinite(pos.entryScore) ? pos.entryScore : null,
+      buysPct: null,
+      transactionCount: null,
+      topHolderPct: null,
+      tokenAgeDays: null,
+      priceSource: pos.priceSource || null
+    };
+  }
+
+  function runLLMAgent(name, fn, llmCfg, log) {
+    state.counters.llmCalls = state.counters.llmCalls + 1;
+    try {
+      const out = fn();
+      log('ATLAS LLM agent ' + name + ' returned');
+      return out;
+    } catch (err) {
+      const msg = err && err.message ? err.message : 'LLM agent error';
+      log('ATLAS LLM agent ' + name + ' failed: ' + msg);
+      state.counters.llmFails = state.counters.llmFails + 1;
+      return {
+        agent: name === 'synthesis' ? 'decision-synthesizer' : (name === 'risk' ? 'risk-officer' : (name === 'bull' ? 'bull-researcher' : 'bear-researcher')),
+        candidate: '',
+        timestamp: Date.now(),
+        direction: 'unknown',
+        confidence: 0,
+        score: 0,
+        thesis: 'LLM unavailable: ' + msg,
+        evidence: [],
+        risks: ['llm_unavailable'],
+        invalidatingConditions: [],
+        prediction: { expectedMovePct: 0, probabilityUp: 0, probabilityDown: 0 },
+        dataQuality: 'ok',
+        unavailable: true
+      };
+    }
+  }
+
+  function disagreementFor(outputs) {
+    const viewpoints = [];
+    for (const name of AGENT_ORDER) {
+      const out = outputs[name];
+      if (out && out.direction) viewpoints.push({ direction: out.direction, score: Number.isFinite(out.score) ? out.score : (Number.isFinite(out.confidence) ? out.confidence : 0) });
+    }
+    if (outputs.bull && outputs.bull.direction) viewpoints.push({ direction: outputs.bull.direction, score: Number.isFinite(outputs.bull.score) ? outputs.bull.score : (Number.isFinite(outputs.bull.confidence) ? outputs.bull.confidence : 0) });
+    if (outputs.bear && outputs.bear.direction) viewpoints.push({ direction: outputs.bear.direction, score: Number.isFinite(outputs.bear.score) ? outputs.bear.score : (Number.isFinite(outputs.bear.confidence) ? outputs.bear.confidence : 0) });
+    return disagreement(viewpoints);
+  }
+
+  function buildDecision(cand, type, integrity, outputs, ctx, ts) {
+    const synth = outputs.synthesis || {};
+    const bull = outputs.bull || {};
+    const bear = outputs.bear || {};
+    const risk = outputs.risk || {};
+
+    const dqOverall = integrity.dataQuality === 'suspicious' || integrity.dataQuality === 'fail' ? 'suspicious' : 'ok';
+
+    const decision = {
+      type: type === 'position' ? 'position' : 'candidate',
+      ts,
+      iso: new Date(ts).toISOString(),
+      symbol: cand.symbol || null,
+      mint: cand.mint || null,
+      pairAddress: cand.pairAddress || null,
+      dex: cand.dex || null,
+      priceSource: cand.priceSource || cand.source || null,
+      mode: state.mode,
+      atlasVersion: VERSION,
+      promptVersion: PROMPT_VERSION,
+      v1: {
+        eligible: true, // V1 still authoritative; ATLAS doesn't change eligibility here
+        score: Number.isFinite(cand.score) ? cand.score : null
+      },
+      atlas: {
+        score: Number.isFinite(synth.researchScore) ? synth.researchScore : 0,
+        confidence: Number.isFinite(synth.researchConfidence) ? synth.researchConfidence : 0,
+        consensus: synth.consensus || 'mixed',
+        agreement: null,
+        dataQuality: dqOverall
+      },
+      technical: outputs.technical ? agentDigest(outputs.technical) : null,
+      momentum: outputs.momentum ? agentDigest(outputs.momentum) : null,
+      volatility: outputs.volatility ? agentDigest(outputs.volatility) : null,
+      liquidity: outputs.liquidity ? agentDigest(outputs.liquidity) : null,
+      regime: outputs.regime ? agentDigest(outputs.regime) : null,
+      sentiment: outputs.sentiment ? agentDigest(outputs.sentiment) : null,
+      solana: outputs.solana ? agentDigest(outputs.solana) : null,
+      onchain: outputs.onchain ? agentDigest(outputs.onchain) : null,
+      tokenQuality: outputs.tokenQuality ? agentDigest(outputs.tokenQuality) : null,
+      manipulation: outputs.manipulation ? agentDigest(outputs.manipulation) : null,
+      bull: bull ? agentDigest(bull) : null,
+      bear: bear ? agentDigest(bear) : null,
+      risk: risk ? agentDigest(risk) : null,
+      synthesis: synth ? {
+        researchScore: Number.isFinite(synth.researchScore) ? synth.researchScore : 0,
+        researchRecommendation: synth.researchRecommendation || 'HOLD',
+        researchConfidence: Number.isFinite(synth.researchConfidence) ? synth.researchConfidence : 0,
+        consensus: synth.consensus || 'mixed',
+        riskLevel: synth.riskLevel || 'medium',
+        dataQuality: synth.dataQuality || dqOverall,
+        technicalScore: Number.isFinite(synth.technicalScore) ? synth.technicalScore : outputs.technical ? outputs.technical.score : 0,
+        quantScore: Number.isFinite(synth.quantScore) ? synth.quantScore : 0,
+        sentimentScore: Number.isFinite(synth.sentimentScore) ? synth.sentimentScore : outputs.sentiment ? outputs.sentiment.score : 0,
+        marketScore: Number.isFinite(synth.marketScore) ? synth.marketScore : outputs.regime ? outputs.regime.score : 0,
+        bullScore: Number.isFinite(synth.bullScore) ? synth.bullScore : bull ? bull.score : 0,
+        bearRisk: Number.isFinite(synth.bearRisk) ? synth.bearRisk : bear ? bear.riskScore : 0,
+        reasons: synth.reasons || [],
+        warnings: synth.warnings || []
+      } : null,
+      integrity: {
+        status: integrity.dataQuality === 'suspicious' || integrity.dataQuality === 'fail' || integrity.dataQuality === 'quarantined' ? 'FAIL' : 'PASS',
+        dataQuality: dqOverall,
+        pairStable: integrity.pairStable,
+        sourcesAgree: integrity.sourcesAgree,
+        reasons: integrity.reasons || []
+      },
+      decision: 'PAPER_ELIGIBLE', // ATLAS advisory only — does NOT authorize execution
+      reasons: (synth.reasons || []).slice(0, 12),
+      warnings: (synth.warnings || []).concat((risk.invalidatingConditions || [])).slice(0, 12)
+    };
+
+    appendDecision(cleanDecision(decision));
+    return decision;
+  }
+
+  function agentDigest(out) {
+    return {
+      agent: out.agent || null,
+      direction: out.direction || 'unknown',
+      confidence: Number.isFinite(out.confidence) ? out.confidence : 0,
+      score: Number.isFinite(out.score) ? out.score : 0,
+      thesis: out.thesis || '',
+      evidence: (out.evidence || []).slice(0, 8),
+      risks: (out.risks || []).slice(0, 6),
+      invalidatingConditions: (out.invalidatingConditions || []).slice(0, 6),
+      prediction: out.prediction || { expectedMovePct: 0, probabilityUp: 0, probabilityDown: 0 },
+      dataQuality: out.dataQuality || 'ok'
+    };
+  }
+
+  function cleanDecision(d) {
+    const c = Object.assign({}, d);
+    delete c._tmp;
+    return c;
+  }
+
+  function snapshot() {
+    return {
+      mode: state.mode,
+      enabled: state.enabled,
+      lastRunAt: state.lastRunAt,
+      cycles: state.cycles,
+      counters: Object.assign({}, state.counters),
+      latest: state.latest,
+      calibration: calibration,
+      abPaper: abPaper.snapshot(),
+      evidenceState: statsLib.evidenceState(state.counters.candidatesResearched),
+      statistics: getStatistics()
+    };
+  }
+
+  /**
+   * Compute current statistical comparison between ATLAS and Circuit.
+   * Returns matched-sample analysis, bootstrap CI, effect size, test.
+   */
+  function getStatistics() {
+    try {
+      const abSnap = abPaper.snapshot();
+      const comparisons = abSnap && abSnap.totalComparisons > 0 ? abSnap : null;
+      if (!comparisons || !comparisons.groupA || comparisons.groupA.totalTrades < 2) {
+        return {
+          matchedSamples: 0,
+          evidenceState: statsLib.INSUFFICIENT_SAMPLE,
+          note: 'Insufficient matched samples for statistical analysis'
+        };
+      }
+      // Use A/B comparisons as matched samples
+      const abState = abPaper.state ? abPaper.state() : {};
+      const comps = (abState.comparisons || []).map(c => ({
+        circuitReturn: c.v1Return || 0,
+        atlasReturn: c.atlasReturn || 0
+      }));
+      const matched = statsLib.matchedSampleAnalysis(comps);
+      const ef = statsLib.effectSize(matched);
+      const test = statsLib.pairedTest(matched.circuitReturns, matched.atlasReturns);
+      const circuitCI = statsLib.bootstrapCI(matched.circuitReturns);
+      const atlasCI = statsLib.bootstrapCI(matched.atlasReturns);
+      const pairedCI = statsLib.pairedBootstrapCI(matched.circuitReturns, matched.atlasReturns);
+      const n = matched.matchedSamples;
+      const evidenceLabel = statsLib.evidenceState(n);
+      // Checkpoints
+      const ckpt = checkpoints.compute(matched, matched.circuitReturns, matched.atlasReturns);
+      return {
+        matchedSamples: n,
+        evidenceState: evidenceLabel,
+        matched,
+        effectSize: ef,
+        statisticalTest: test,
+        circuitBootstrap: circuitCI,
+        atlasBootstrap: atlasCI,
+        pairedBootstrap: pairedCI,
+        checkpoint: ckpt
+      };
+    } catch (_) {
+      return { matchedSamples: 0, evidenceState: statsLib.INSUFFICIENT_SAMPLE, note: 'statistics computation error' };
+    }
+  }
+
+  /**
+   * Persist a checkpoint and daily snapshot.
+   */
+  function persistCheckpoint() {
+    try {
+      const stats = getStatistics();
+      if (stats.matchedSamples > 0 && stats.checkpoint) {
+        checkpoints.persistCheckpoint(stats.checkpoint);
+      }
+      const today = new Date().toISOString().slice(0, 10);
+      const outcomes = db.outcomes ? db.outcomes() : [];
+      const preds = journal.all ? journal.all() : [];
+      const abState = abPaper.state ? abPaper.state() : {};
+      // Phase 12 (P2-01): pass the A/B comparison rows as their own
+      // population — never index-paired against `outcomes`.
+      const comps = abState.comparisons || [];
+      const dailyStats = dailySnapshots.buildDailyStats(outcomes, preds, comps);
+      dailySnapshots.record(today, dailyStats);
+    } catch (_) { /* best effort */ }
+  }
+
+  /**
+   * Record a trade outcome against ATLAS predictions for the given mint.
+   * Look-ahead-free: only evaluates predictions whose ts <= entryTs.
+   * @param {object} trade { mint, pnlPct, entryTs, exitTs }
+   */
+  function recordTradeOutcome({ mint, pnlPct, entryTs, exitTs, v1Score, exitReason, symbol } = {}) {
+    if (!enabled || !mint) return { found: false, outcomes: [] };
+    const journal = createPredictionJournl(db);
+    // Trade attribution is intentionally restricted to predictions that
+    // existed before the V1 entry. Horizon-based ATLAS forecasts are resolved
+    // separately from real market history and are not selected by V1 trades.
+    const preds = journal.forMint(mint, null, Number.isFinite(entryTs) ? entryTs : (exitTs || Date.now()));
+    if (!preds.length) return { found: false, outcomes: [] };
+    const existing = new Set((db.outcomes ? db.outcomes() : []).map(o => o && o.predictionId).filter(Boolean));
+    const outcomes = [];
+    let atlasRec = 'HOLD';
+    let atlasScore = null;
+    for (const pred of preds) {
+      const ev = evaluateOutcome(pred, { pnlPct, realizedAt: exitTs || Date.now(), exitMint: mint, outcomeType: 'trade' });
+      if (ev && ev.outcome && !existing.has(ev.outcome.predictionId)) {
+        db.appendOutcome(ev.outcome);
+        outcomes.push(ev);
+        // Update calibration for each agent (Phase 11: outcomeType provenance
+        // is mandatory — trade attribution must never mix with horizon outcomes)
+        calibrationLib.record(calibration, pred.agent, pred.confidence, ev.correct, ev.realizedPnlPct, 'trade');
+        // Track the synthesis recommendation for A/B
+        if (pred.agent === 'synthesis') {
+          atlasRec = pred.direction === 'bullish' ? 'BUY' : (pred.direction === 'bearish' ? 'AVOID' : 'HOLD');
+          atlasScore = pred.confidence;
+        }
+      }
+    }
+    // Persist calibration
+    try {
+      if (db.writeJson) db.writeJson('atlas-calibration.json', calibration);
+    } catch (_) {}
+    // Update A/B paper
+    abPaper.recordTrade({ mint, symbol, pnlPct, exitReason, v1Score, atlasScore, atlasRecommendation: atlasRec });
+    return { found: true, outcomes };
+  }
+
+  /**
+   * Resolve every ATLAS prediction whose declared horizon has elapsed.
+   * `resolvePrice(mint, targetTs, prediction)` MUST return the EARLIEST real
+   * observed price at or AFTER targetTs (bounded late tolerance), or null when
+   * no valid observation exists (NO_VALID_OBSERVATION).
+   *
+   * Contract (audit P1-01 / Phase 5): an observation strictly BEFORE the
+   * target is NOT a valid horizon resolution — using it would evaluate the
+   * prediction on pre-horizon data. The old behavior (latest sample <=
+   * targetTs, then evaluateOutcome requiring realizedAt >= targetTs) rejected
+   * every candidate and matured predictions were skipped forever.
+   *
+   * Idempotency (Phase 8): a predictionId may resolve to AT MOST ONE outcome —
+   * `existing` is seeded from disk and updated on every append, so repeated
+   * resolver runs cannot create duplicates.
+   */
+  function resolvePendingPredictions(resolvePrice, now = Date.now()) {
+    if (!enabled || typeof resolvePrice !== 'function') return { resolved: 0, pending: 0, skipped: 0 };
+    const preds = journal.all();
+    const existing = new Set((db.outcomes ? db.outcomes() : []).map(o => o && o.predictionId).filter(Boolean));
+    let resolved = 0, pending = 0, skipped = 0;
+    const reasons = {};
+
+    for (const pred of preds) {
+      if (!pred || !pred.predictionId || existing.has(pred.predictionId)) continue;
+      const horizonMsV = require('./outcome-engine.js').horizonMs(pred.timeHorizon);
+      const targetTs = pred.ts + horizonMsV;
+      if (now < targetTs) { pending += 1; continue; }
+
+      let obs = null;
+      try { obs = resolvePrice(pred.mint, targetTs, pred); } catch (_) { obs = null; }
+      if (!obs || !Number.isFinite(obs.priceSol) || obs.priceSol <= 0) {
+        // No valid at/after-target observation. NOT an outcome. The prediction
+        // stays unresolved in the journal (it is retried while research
+        // history can still supply an observation; after it ages past the
+        // retention window it is reported as NO_VALID_OBSERVATION, never
+        // fabricated).
+        reasons.NO_VALID_OBSERVATION = (reasons.NO_VALID_OBSERVATION || 0) + 1;
+        skipped += 1;
+        continue;
+      }
+
+      const entryPrice = Number.isFinite(pred.priceSol) ? pred.priceSol : null;
+      if (!(entryPrice > 0)) {
+        reasons.INVALID_PRICE = (reasons.INVALID_PRICE || 0) + 1;
+        skipped += 1;
+        continue;
+      }
+      const pnlPct = ((obs.priceSol - entryPrice) / entryPrice) * 100;
+      const ev = evaluateOutcome(pred, {
+        pnlPct,
+        realizedAt: obs.ts,
+        exitMint: pred.mint,
+        exitPriceSol: obs.priceSol,
+        exitPriceUsd: Number.isFinite(obs.priceUsd) ? obs.priceUsd : null,
+        outcomeType: 'horizon',
+        resolvedPairAddress: obs.pairAddress || null,
+        resolvedDex: obs.dex || null,
+        resolvedSource: obs.source || null,
+        resolvedLateMs: Number.isFinite(obs.lateMs) ? obs.lateMs : null
+      }, { requireHorizonExpiry: true });
+      if (!ev || !ev.outcome || !ev.horizonExpired) {
+        // With the corrected resolver contract this can only happen when a
+        // caller-supplied resolver still returns pre-target observations —
+        // refuse them rather than record a wrong-horizon outcome.
+        reasons.HORIZON_NOT_MATURE = (reasons.HORIZON_NOT_MATURE || 0) + 1;
+        skipped += 1;
+        continue;
+      }
+
+      db.appendOutcome(ev.outcome);
+      // Phase 11: horizon resolution is the ONLY path that feeds 'horizon'
+      // calibration samples; skipped/unresolved predictions never reach here.
+      calibrationLib.record(calibration, pred.agent, pred.confidence, ev.correct, ev.realizedPnlPct, 'horizon');
+      existing.add(pred.predictionId);
+      resolved += 1;
+    }
+
+    if (resolved > 0) {
+      try { if (db.writeJson) db.writeJson('atlas-calibration.json', calibration); } catch (_) {}
+    }
+    // Phase 19: compact, reason-attributed resolution logging (no per-
+    // prediction spam; no secrets).
+    log(`[ATLAS-RESOLVE] resolved=${resolved} pending=${pending} skipped=${skipped}` +
+      ` noObservation=${reasons.NO_VALID_OBSERVATION || 0} lateObservation=${resolved}` +
+      (reasons.INVALID_PRICE ? ` invalidPrice=${reasons.INVALID_PRICE}` : '') +
+      (reasons.HORIZON_NOT_MATURE ? ` horizonNotMature=${reasons.HORIZON_NOT_MATURE}` : ''));
+    return { resolved, pending, skipped };
+  }
+
+  return {
+    mode: () => state.mode,
+    enabled: () => state.enabled,
+    runCycle,
+    resolvePendingPredictions,
+    snapshot,
+    recordTradeOutcome,
+    getStatistics,
+    persistCheckpoint,
+    lastRunAt: () => state.lastRunAt,
+    cycles: () => state.cycles
+  };
+}module.exports = {
+  createAtlasEngine,
+  DECISIONS_FILE,
+  VERSION,
+  PROMPT_VERSION,
+  AGENTS
+};

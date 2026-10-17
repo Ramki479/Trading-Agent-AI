@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Convenience wrapper for the paper-portfolio viewer.
+# Usage: ./paper-portfolio   (equivalent to: node portfolio.js)
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec node "$DIR/portfolio.js" "$@"

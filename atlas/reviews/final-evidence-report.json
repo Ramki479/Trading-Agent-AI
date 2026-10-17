@@ -1,0 +1,61 @@
+{
+  "reviewId": "FINAL-B2C2E8D5DBA5",
+  "phase": 15,
+  "evidenceClassification": "INSUFFICIENT_EVIDENCE",
+  "sampleCount": 0,
+  "datasetHash": "EMPTY",
+  "evidenceMatrix": {
+    "checkpoint30": "NOT_AVAILABLE",
+    "checkpoint100": "NOT_AVAILABLE",
+    "oosEvidence": "INSUFFICIENT",
+    "temporalEvidence": "INSUFFICIENT",
+    "regimeEvidence": "INSUFFICIENT",
+    "agentEvidence": "INSUFFICIENT",
+    "calibrationEvidence": "INSUFFICIENT",
+    "dataQuality": "PASS",
+    "overfittingCheck": "PASS",
+    "reproducibility": "PASS",
+    "econSignificance": "NOT_AVAILABLE",
+    "statSignificance": "INSUFFICIENT"
+  },
+  "primary": {
+    "n": 0,
+    "mean": null,
+    "median": null,
+    "std": null,
+    "se": null,
+    "min": null,
+    "max": null,
+    "winRateDiff": null,
+    "atlasWins": 0,
+    "v1Wins": 0,
+    "ties": 0
+  },
+  "bootstrap": {
+    "insufficient": true,
+    "mean": null,
+    "ciLower": null,
+    "ciUpper": null
+  },
+  "effectSize": {
+    "d": null,
+    "interpretation": "INSUFFICIENT_DATA",
+    "magnitude": 0
+  },
+  "statisticalTest": {
+    "testName": "none",
+    "sampleSize": 0,
+    "statistic": null,
+    "pValue": null,
+    "conclusion": "INSUFFICIENT_EVIDENCE"
+  },
+  "economic": {
+    "meanImprovement": null,
+    "exceedsThreshold": false,
+    "thresholdPct": 0.5,
+    "atlasBetterPct": null,
+    "atlasWorsePct": null,
+    "tiedPct": null
+  },
+  "timestamp": 1788785868739
+}

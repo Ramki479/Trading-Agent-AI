@@ -1,0 +1,6 @@
+nohup: ignoring input
+Paper Portfolio API running
+http://0.0.0.0:8787
+data dir: /home/ramki/.circuit/agents/paper-trader
+read-only mode — paper trading account is never modified by this API
+USD/INR rate: 94.5473 (source open.er-api.com)

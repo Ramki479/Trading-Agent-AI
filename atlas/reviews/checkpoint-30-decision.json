@@ -1,0 +1,197 @@
+{
+  "decisionId": "DEC-30-5359D087ED",
+  "checkpoint": 30,
+  "timestamp": 1788780959059,
+  "iso": "2026-09-07T11:35:59.059Z",
+  "classification": "CHECKPOINT_30_NOT_REACHED",
+  "reason": "Matched samples (0) < 30. Cannot evaluate evidence.",
+  "evidenceStrength": "NONE",
+  "sampleCount": 0,
+  "matchedSamples": 0,
+  "requiredSamples": 30,
+  "prerequisites": [
+    {
+      "check": "sampleCount",
+      "passed": false,
+      "detail": "sampleCount=0 < 30"
+    },
+    {
+      "check": "datasetHash",
+      "passed": false,
+      "detail": "datasetHash is PENDING or missing"
+    },
+    {
+      "check": "analysisVersion",
+      "passed": true,
+      "detail": "analysisVersion=1.0.0"
+    },
+    {
+      "check": "codeVersion",
+      "passed": true,
+      "detail": "codeVersion=ATLAS-0.2.0"
+    },
+    {
+      "check": "lookAheadViolations",
+      "passed": true,
+      "detail": "lookAheadViolations=0"
+    },
+    {
+      "check": "duplicateViolations",
+      "passed": true,
+      "detail": "duplicateViolations=0"
+    },
+    {
+      "check": "dataQualityExclusions",
+      "passed": true,
+      "detail": "excluded=0"
+    },
+    {
+      "check": "evidenceClassification",
+      "passed": true,
+      "detail": "evidenceClassification=INSUFFICIENT_EVIDENCE"
+    }
+  ],
+  "allPrereqsPassed": false,
+  "integrity": [
+    {
+      "check": "datasetHash",
+      "passed": true,
+      "detail": "no observations to hash (sampleCount=0)"
+    },
+    {
+      "check": "duplicates",
+      "passed": true,
+      "detail": "predIds=0, fingerprints=0"
+    },
+    {
+      "check": "lookAhead",
+      "passed": true,
+      "detail": "violations=0"
+    },
+    {
+      "check": "v1Constants",
+      "passed": true,
+      "detail": "V1 strategy constants unchanged (STOP_LOSS_PCT=-6, TAKE_PROFIT_PCT=8, MIN_SCORE=60, MAX_POSITIONS=5, cooldown=600000)"
+    },
+    {
+      "check": "atlasExecutionIsolation",
+      "passed": true,
+      "detail": "ATLAS cannot execute, sign, broadcast, or modify ledger"
+    },
+    {
+      "check": "paperOnly",
+      "passed": true,
+      "detail": "PAPER_TRADING=true, no wallet/signer/broadcast paths"
+    },
+    {
+      "check": "promotionFirewall",
+      "passed": true,
+      "detail": "ATLAS cannot self-promote. HUMAN_REVIEW_REQUIRED."
+    },
+    {
+      "check": "abIsolation",
+      "passed": true,
+      "detail": "Counterfactual results do not modify paper ledger"
+    }
+  ],
+  "allIntegrityPassed": true,
+  "statisticalAnalysis": {
+    "sampleCount": 0,
+    "required": 30,
+    "primaryMetric": null,
+    "bootstrapCI": null,
+    "effectSize": null,
+    "statisticalTest": null
+  },
+  "reviewEvidenceClassification": "INSUFFICIENT_EVIDENCE",
+  "evidenceState": "INSUFFICIENT_SAMPLE",
+  "datasetHash": "PENDING",
+  "analysisVersion": "1.0.0",
+  "codeVersion": "ATLAS-0.2.0",
+  "methodologyVersion": "1.0.0",
+  "horizons": {
+    "5m": {
+      "status": "INSUFFICIENT_SAMPLE",
+      "n": 0
+    },
+    "15m": {
+      "status": "INSUFFICIENT_SAMPLE",
+      "n": 0
+    },
+    "30m": {
+      "status": "INSUFFICIENT_SAMPLE",
+      "n": 0
+    },
+    "1h": {
+      "status": "INSUFFICIENT_SAMPLE",
+      "n": 0
+    },
+    "4h": {
+      "status": "INSUFFICIENT_SAMPLE",
+      "n": 0
+    }
+  },
+  "calibration": {
+    "50-59%": {
+      "sample": 0,
+      "meanConfidence": null,
+      "accuracy": null,
+      "meanReturn": null,
+      "sumReturn": 0,
+      "label": "50-59%"
+    },
+    "60-69%": {
+      "sample": 0,
+      "meanConfidence": null,
+      "accuracy": null,
+      "meanReturn": null,
+      "sumReturn": 0,
+      "label": "60-69%"
+    },
+    "70-79%": {
+      "sample": 0,
+      "meanConfidence": null,
+      "accuracy": null,
+      "meanReturn": null,
+      "sumReturn": 0,
+      "label": "70-79%"
+    },
+    "80-89%": {
+      "sample": 0,
+      "meanConfidence": null,
+      "accuracy": null,
+      "meanReturn": null,
+      "sumReturn": 0,
+      "label": "80-89%"
+    },
+    "90-100%": {
+      "sample": 0,
+      "meanConfidence": null,
+      "accuracy": null,
+      "meanReturn": null,
+      "sumReturn": 0,
+      "label": "90-100%"
+    }
+  },
+  "humanDecision": {
+    "decision": null,
+    "reviewer": null,
+    "reviewTimestamp": null,
+    "reason": null,
+    "evidenceHash": null,
+    "notes": null,
+    "populated": false
+  },
+  "promotionStatus": "BLOCKED",
+  "atlasMode": "SHADOW",
+  "circuitAuthority": "AUTHORITATIVE",
+  "executionMode": "PAPER_ONLY",
+  "v1Modified": false,
+  "ledgerAffected": false,
+  "automaticPromotion": false,
+  "limitations": [
+    "INSUFFICIENT_SAMPLE: fewer than 30 matched observations",
+    "NO_AUTO_PROMOTION: ATLAS remains SHADOW regardless of statistical result",
+    "PAPER_ONLY: no real execution possible through ATLAS"
+  ]
+}

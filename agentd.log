@@ -1,0 +1,866 @@
+nohup: ignoring input
+[2026-09-07T16:12:29.594Z] ==========================================
+[2026-09-07T16:12:29.595Z] paper-trader agent starting (mode=paper, paper=true, custody=local)
+[2026-09-07T16:12:29.595Z] [STARTUP] real-market Solana paper trader — paper only, wallet/signer/broadcast disabled
+[2026-09-07T16:12:29.596Z] CIRCUIT_SIGNER_URL not set — trades remain paper (no signer, no broadcast)
+================================================
+ REAL-MARKET SOLANA PAPER TRADER
+================================================
+Data directory : /home/ramki/.circuit/agents/paper-trader
+Starting SOL   : 10
+Trade size     : 0.05 SOL
+Max positions  : 5
+Discovery      : 60000 ms
+Monitor        : 5000 ms
+5m recovery    : >= 0.25%
+Re-entry cool. : 600000 ms
+Wallet         : DISABLED
+Signer         : DISABLED
+Broadcast      : DISABLED
+Market         : REAL SOLANA
+Execution      : PAPER ONLY
+Adaptive loop  : every 90 min (mode/minScore/maxBuys)
+Reflection     : every 4 h (learning + approvals)
+Adaptive size  : 0.0125..0.05 SOL (auto)
+TradingAgents  : SHADOW (advisory research)
+================================================
+[2026-09-07T16:12:29.597Z] [LOCK] acquired agent.lock (pid 13449)
+[2026-09-07T16:12:29.597Z] [STARTUP] market data provider: dexscreener (mode=real)
+[2026-09-07T16:12:29.597Z] [STARTUP] data dir: /home/ramki/.circuit/agents/paper-trader
+[2026-09-07T16:12:29.597Z] Loaded existing paper portfolio: cash=9.99018726 SOL, 0 open position(s), realized P&L=-0.00981274 SOL, total P&L=-0.00981274 SOL
+[2026-09-07T16:12:29.644Z] [STARTUP] price integrity enabled — 0 open position(s) anchored
+[2026-09-07T16:12:29.647Z] [STARTUP] TradingAgents research layer mode=SHADOW (research active — Circuit V1 execution unchanged)
+[2026-09-07T16:12:29.648Z] [STARTUP] ATLAS intelligence layer mode=SHADOW (research active — V1 execution unchanged)
+[2026-09-07T16:12:29.648Z] [ADAPTIVE] enabled — agent-loop every 90 min (first in 2601s), reflection every 4.0 h (first in 11901s), autoApply=false
+[2026-09-07T16:12:29.741Z] [STARTUP] real SOL price: $103.49
+[2026-09-07T16:12:32.696Z] [SCAN #1790] 36 real candidate(s)
+[2026-09-07T16:12:32.717Z]   BTC score=40 1h=+9.55% 5m=warming(0 samples) price=$0.00145 priceSOL=0.000014011016 liq=160.5K vol=2.7M src=dexscreener
+[2026-09-07T16:12:32.717Z]   $HACHI score=26 1h=-0.39% 5m=warming(0 samples) price=$0 priceSOL=0.000000000015 liq=65.5K vol=37.2K src=dexscreener
+[2026-09-07T16:12:32.717Z]   NASDIQ score=32 1h=+55.13% 5m=warming(0 samples) price=$0.000217 priceSOL=0.000002096821 liq=39.0K vol=507.9K src=dexscreener
+[2026-09-07T16:12:32.717Z]   OTC score=32 1h=+209.00% 5m=warming(0 samples) price=$0.0002351 priceSOL=0.000002271717 liq=40.4K vol=348.6K src=dexscreener
+[2026-09-07T16:12:32.717Z]   JR2000 score=36 1h=+138.00% 5m=warming(0 samples) price=$0.0005676 priceSOL=0.000005484588 liq=64.6K vol=686.0K src=dexscreener
+[2026-09-07T16:12:32.718Z]   LAPTOP score=62 1h=-56.66% 5m=warming(0 samples) price=$0.0001174 priceSOL=0.000001134409 liq=29.6K vol=1.4M src=dexscreener
+[2026-09-07T16:12:32.718Z]   NIVI score=32 1h=+54.89% 5m=warming(0 samples) price=$0.0001157 priceSOL=0.000001117982 liq=28.2K vol=542.6K src=dexscreener
+[2026-09-07T16:12:32.718Z]   TRONK score=25 1h=+5.21% 5m=warming(0 samples) price=$0.00000471 priceSOL=0.000000045550 liq=5.0K vol=5.3M src=dexscreener
+[2026-09-07T16:12:32.718Z]   LAPTOP score=32 1h=+228.00% 5m=warming(0 samples) price=$0.0003337 priceSOL=0.000003224466 liq=48.9K vol=697.4K src=dexscreener
+[2026-09-07T16:12:32.718Z]   Zebrigrade score=62 1h=-44.65% 5m=warming(0 samples) price=$0.000106 priceSOL=0.000001024254 liq=30.3K vol=428.4K src=dexscreener
+[2026-09-07T16:12:32.718Z]   TOKEN score=22 1h=+5.62% 5m=warming(0 samples) price=$0.0002251 priceSOL=0.000002175089 liq=44.7K vol=31.5K src=dexscreener
+[2026-09-07T16:12:32.718Z]   jorky score=22 1h=+41.04% 5m=warming(0 samples) price=$0.00006692 priceSOL=0.000000646633 liq=20.3K vol=41.6K src=dexscreener
+[2026-09-07T16:12:32.718Z]   CATFLIX score=52 1h=-99.73% 5m=warming(0 samples) price=$0.00000209 priceSOL=0.000000020166 liq=2.3K vol=960.9K src=dexscreener
+[2026-09-07T16:12:32.718Z]   STONKTRUMP score=24 1h=-1.79% 5m=warming(0 samples) price=$0.00000212 priceSOL=0.000000020504 liq=2.4K vol=1.3M src=dexscreener
+[2026-09-07T16:12:32.718Z]   WUFF score=16 1h=+55.44% 5m=warming(0 samples) price=$0.00004279 priceSOL=0.000000413470 liq=17.3K vol=15.1K src=dexscreener
+[2026-09-07T16:12:32.718Z]   ALT score=37 1h=-14.06% 5m=warming(0 samples) price=$0.00003803 priceSOL=0.000000367475 liq=17.1K vol=248.3K src=dexscreener
+[2026-09-07T16:12:32.719Z]   ZCAT score=43 1h=-3.46% 5m=warming(0 samples) price=$0.1143 priceSOL=0.001104454537 liq=1.8M vol=270.7M src=dexscreener
+[2026-09-07T16:12:32.719Z]   Nasduck score=51 1h=-12.77% 5m=warming(0 samples) price=$0.001955 priceSOL=0.000018890714 liq=149.3K vol=14.0M src=dexscreener
+[2026-09-07T16:12:32.719Z]   STONK score=40 1h=+10.64% 5m=warming(0 samples) price=$0.112 priceSOL=0.001082230167 liq=2.4M vol=38.7M src=dexscreener
+[2026-09-07T16:12:32.719Z]   OTC score=40 1h=+13.39% 5m=warming(0 samples) price=$0.01563 priceSOL=0.000151029085 liq=553.9K vol=8.0M src=dexscreener
+[2026-09-07T16:12:32.719Z]   AGI score=51 1h=-12.47% 5m=warming(0 samples) price=$0.002888 priceSOL=0.000027906078 liq=242.7K vol=7.5M src=dexscreener
+[2026-09-07T16:12:32.719Z]   CatGPT score=61 1h=-29.22% 5m=warming(0 samples) price=$0.0003754 priceSOL=0.000003627404 liq=60.8K vol=5.1M src=dexscreener
+[2026-09-07T16:12:32.719Z]   PURR score=50 1h=-11.65% 5m=warming(0 samples) price=$0.00603 priceSOL=0.000058266499 liq=450.5K vol=5.3M src=dexscreener
+[2026-09-07T16:12:32.719Z]   USELESS score=40 1h=+3.68% 5m=warming(0 samples) price=$0.2266 priceSOL=0.002189583535 liq=4.6M vol=9.5M src=dexscreener
+[2026-09-07T16:12:32.719Z]   CATE score=40 1h=+0.89% 5m=warming(0 samples) price=$0.03058 priceSOL=0.000295487487 liq=1.7M vol=5.2M src=dexscreener
+[2026-09-07T16:12:32.719Z]   SOLCAT score=53 1h=-15.11% 5m=warming(0 samples) price=$0.0009285 priceSOL=0.000008971881 liq=132.7K vol=1.6M src=dexscreener
+[2026-09-07T16:12:32.719Z]   ANSEM score=44 1h=-4.32% 5m=warming(0 samples) price=$0.1961 priceSOL=0.001894869069 liq=2.6M vol=3.4M src=dexscreener
+[2026-09-07T16:12:32.719Z]   LOOM score=65 1h=-29.64% 5m=warming(0 samples) price=$0.0004844 priceSOL=0.000004680645 liq=105.4K vol=3.6M src=dexscreener
+[2026-09-07T16:12:32.719Z]   fone score=40 1h=-0.20% 5m=warming(0 samples) price=$0.009576 priceSOL=0.000092530679 liq=614.9K vol=4.8M src=dexscreener
+[2026-09-07T16:12:32.720Z]   RAY score=40 1h=+0.23% 5m=warming(0 samples) price=$1.17 priceSOL=0.011305440139 liq=5.1M vol=5.5M src=dexscreener
+[2026-09-07T16:12:32.720Z]   TROLL score=41 1h=-1.45% 5m=warming(0 samples) price=$0.04795 priceSOL=0.000463329790 liq=3.2M vol=2.1M src=dexscreener
+[2026-09-07T16:12:32.720Z]   PUMP score=42 1h=-2.45% 5m=warming(0 samples) price=$0.004213 priceSOL=0.000040709247 liq=22.0M vol=7.0M src=dexscreener
+[2026-09-07T16:12:32.720Z]   Pumployed score=13 1h=+70547.00% 5m=warming(0 samples) price=$0.006379 priceSOL=0.000061638806 liq=0 vol=69.3K src=dexscreener
+[2026-09-07T16:12:32.721Z]   LUNAR score=5 1h=+2342.00% 5m=warming(0 samples) price=$0.00005511 priceSOL=0.000000532515 liq=0 vol=1 src=dexscreener
+[2026-09-07T16:12:32.721Z]   SHROOM score=38 1h=-100.00% 5m=warming(0 samples) price=$0 priceSOL=0.000000000005 liq=1 vol=11.8K src=dexscreener
+[2026-09-07T16:12:32.721Z]   ANTFUN score=35 1h=-100.00% 5m=warming(0 samples) price=$0 priceSOL=0.000000000006 liq=1 vol=9.7K src=dexscreener
+[2026-09-07T16:12:32.722Z] [POLICY] mode=watchOnly minScore=60 maxBuys=5 regime=consolidation size=1x health=100/100 (HEALTHY)
+[2026-09-07T16:12:32.729Z] [POLICY] watchOnly mode — scanning only, no entries this window
+[2026-09-07T16:12:32.730Z] [TA] LOOM research=33 rec=AVOID consensus=bearish risk=low dataQuality=ok circuit=FILTER (mode=SHADOW)
+[2026-09-07T16:12:32.738Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:12:32.738Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:12:32.739Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:12:32.740Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:12:32.744Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:12:32.744Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:12:32.744Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:12:32.744Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:12:32.745Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:12:32.745Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:12:32.745Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:12:32.745Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:12:32.746Z] [ATLAS] LOOM research=29 rec=HOLD consensus=mixed risk=undefined dataQuality=ok V1=65 (mode=SHADOW)
+[2026-09-07T16:12:32.746Z] [ATLAS-PRED] id=P1788797552732-2D65XD agent=sentiment dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797552732
+[2026-09-07T16:12:32.746Z] [ATLAS-PRED] id=P1788797552732-DKSY4Z agent=solana dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797552732
+[2026-09-07T16:12:32.746Z] [ATLAS-PRED] id=P1788797552732-LYWUOM agent=onchain dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797552732
+[2026-09-07T16:12:32.746Z] [ATLAS-PRED] id=P1788797552732-NGVPNN agent=manipulation dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797552732
+[2026-09-07T16:12:32.746Z] [ATLAS-PRED] id=P1788797552732-YSXB73 agent=sentiment dir=neutral conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797552732
+[2026-09-07T16:12:32.746Z] [ATLAS-PRED] id=P1788797552732-MNA4WO agent=solana dir=neutral conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797552732
+[2026-09-07T16:12:32.746Z] [ATLAS-PRED] id=P1788797552732-6UJJ23 agent=onchain dir=neutral conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797552732
+[2026-09-07T16:12:32.746Z] [ATLAS-PRED] id=P1788797552732-3KPX26 agent=manipulation dir=neutral conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797552732
+[2026-09-07T16:12:32.746Z] [ATLAS-PRED] id=P1788797552732-62CQZ5 agent=sentiment dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797552732
+[2026-09-07T16:12:32.746Z] [ATLAS-PRED] id=P1788797552732-PXHP7W agent=solana dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797552732
+[2026-09-07T16:12:32.746Z] [ATLAS-PRED] id=P1788797552732-03THP4 agent=onchain dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797552732
+[2026-09-07T16:12:32.746Z] [ATLAS-PRED] id=P1788797552732-VMFWRF agent=manipulation dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797552732
+[2026-09-07T16:12:45.355Z] [HISTORY-SKIP] 13/36 token(s) had no usable price this cycle
+[2026-09-07T16:12:45.355Z] [SAMPLER] recorded 23 price sample(s)
+[2026-09-07T16:13:03.433Z] [HISTORY-SKIP] 13/36 token(s) had no usable price this cycle
+[2026-09-07T16:13:03.433Z] [SAMPLER] recorded 23 price sample(s)
+[2026-09-07T16:13:14.773Z] [HISTORY-SKIP] 13/36 token(s) had no usable price this cycle
+[2026-09-07T16:13:14.773Z] [SAMPLER] recorded 23 price sample(s)
+[2026-09-07T16:13:30.778Z] [HISTORY-SKIP] 13/36 token(s) had no usable price this cycle
+[2026-09-07T16:13:30.779Z] [SAMPLER] recorded 23 price sample(s)
+[2026-09-07T16:13:36.792Z] [SCAN #1791] 37 real candidate(s)
+[2026-09-07T16:13:36.792Z]   BTC score=40 1h=+11.63% 5m=warming(4 samples) price=$0.001466 priceSOL=0.000014151945 liq=161.4K vol=2.7M src=dexscreener
+[2026-09-07T16:13:36.792Z]   $HACHI score=26 1h=-0.43% 5m=warming(4 samples) price=$0 priceSOL=0.000000000015 liq=65.5K vol=37.2K src=dexscreener
+[2026-09-07T16:13:36.792Z]   NASDIQ score=32 1h=+76.05% 5m=warming(4 samples) price=$0.0002154 priceSOL=0.000002079351 liq=38.9K vol=510.7K src=dexscreener
+[2026-09-07T16:13:36.793Z]   OTC score=32 1h=+215.00% 5m=warming(4 samples) price=$0.0002397 priceSOL=0.000002313930 liq=40.8K vol=349.9K src=dexscreener
+[2026-09-07T16:13:36.793Z]   JR2000 score=36 1h=+131.00% 5m=warming(4 samples) price=$0.0004986 priceSOL=0.000004813206 liq=60.5K vol=690.7K src=dexscreener
+[2026-09-07T16:13:36.793Z]   LAPTOP score=62 1h=-52.36% 5m=warming(4 samples) price=$0.0001038 priceSOL=0.000001002027 liq=27.8K vol=1.4M src=dexscreener
+[2026-09-07T16:13:36.793Z]   NIVI score=32 1h=+49.48% 5m=warming(4 samples) price=$0.0001116 priceSOL=0.000001077324 liq=27.7K vol=557.6K src=dexscreener
+[2026-09-07T16:13:36.793Z]   TRONK score=22 1h=+4.05% 5m=warming(0 samples) price=$0.00000467 priceSOL=0.000000045043 liq=5.0K vol=5.3M src=dexscreener
+[2026-09-07T16:13:36.793Z]   LAPTOP score=36 1h=+253.00% 5m=warming(0 samples) price=$0.0003594 priceSOL=0.000003469447 liq=51.0K vol=746.7K src=dexscreener
+[2026-09-07T16:13:36.793Z]   Zebrigrade score=62 1h=-44.65% 5m=warming(0 samples) price=$0.000106 priceSOL=0.000001023265 liq=30.3K vol=428.0K src=dexscreener
+[2026-09-07T16:13:36.793Z]   TOKEN score=22 1h=+5.74% 5m=warming(0 samples) price=$0.0002254 priceSOL=0.000002175886 liq=44.8K vol=31.5K src=dexscreener
+[2026-09-07T16:13:36.793Z]   jorky score=22 1h=+46.86% 5m=warming(0 samples) price=$0.00006968 priceSOL=0.000000672652 liq=20.8K vol=41.8K src=dexscreener
+[2026-09-07T16:13:36.793Z]   CATFLIX score=52 1h=-99.66% 5m=warming(0 samples) price=$0.00000209 priceSOL=0.000000020147 liq=2.3K vol=960.9K src=dexscreener
+[2026-09-07T16:13:36.793Z]   STONKTRUMP score=24 1h=-1.79% 5m=warming(0 samples) price=$0.00000212 priceSOL=0.000000020485 liq=2.4K vol=1.3M src=dexscreener
+[2026-09-07T16:13:36.793Z]   WUFF score=16 1h=+53.36% 5m=warming(0 samples) price=$0.00004279 priceSOL=0.000000413071 liq=17.3K vol=15.1K src=dexscreener
+[2026-09-07T16:13:36.794Z]   ALT score=33 1h=-9.37% 5m=warming(0 samples) price=$0.0000401 priceSOL=0.000000387103 liq=17.7K vol=248.5K src=dexscreener
+[2026-09-07T16:13:36.794Z]   ZCAT score=46 1h=-7.02% 5m=warming(4 samples) price=$0.1156 priceSOL=0.001115937832 liq=1.8M vol=270.7M src=dexscreener
+[2026-09-07T16:13:36.794Z]   Nasduck score=47 1h=-8.10% 5m=warming(4 samples) price=$0.001968 priceSOL=0.000018997973 liq=149.9K vol=14.0M src=dexscreener
+[2026-09-07T16:13:36.794Z]   STONK score=40 1h=+14.73% 5m=warming(4 samples) price=$0.1141 priceSOL=0.001101457670 liq=2.4M vol=38.7M src=dexscreener
+[2026-09-07T16:13:36.794Z]   OTC score=40 1h=+11.16% 5m=warming(4 samples) price=$0.01565 priceSOL=0.000151076359 liq=554.7K vol=8.0M src=dexscreener
+[2026-09-07T16:13:36.794Z]   AGI score=53 1h=-15.49% 5m=warming(4 samples) price=$0.002802 priceSOL=0.000027048943 liq=238.9K vol=7.5M src=dexscreener
+[2026-09-07T16:13:36.794Z]   CatGPT score=52 1h=-18.74% 5m=warming(4 samples) price=$0.0003797 priceSOL=0.000003665412 liq=61.2K vol=5.1M src=dexscreener
+[2026-09-07T16:13:36.794Z]   PURR score=51 1h=-12.79% 5m=warming(4 samples) price=$0.006055 priceSOL=0.000058451588 liq=451.9K vol=5.3M src=dexscreener
+[2026-09-07T16:13:36.794Z]   USELESS score=40 1h=+3.58% 5m=warming(4 samples) price=$0.2273 priceSOL=0.002194227242 liq=4.7M vol=9.5M src=dexscreener
+[2026-09-07T16:13:36.794Z]   CATE score=40 1h=+1.64% 5m=warming(4 samples) price=$0.0308 priceSOL=0.000297325997 liq=1.8M vol=5.2M src=dexscreener
+[2026-09-07T16:13:36.795Z]   SOLCAT score=53 1h=-15.18% 5m=warming(4 samples) price=$0.0009107 priceSOL=0.000008791389 liq=131.5K vol=1.6M src=dexscreener
+[2026-09-07T16:13:36.795Z]   ANSEM score=44 1h=-4.54% 5m=warming(4 samples) price=$0.1955 priceSOL=0.001887247804 liq=2.5M vol=3.4M src=dexscreener
+[2026-09-07T16:13:36.795Z]   LOOM score=64 1h=-27.42% 5m=warming(4 samples) price=$0.0004958 priceSOL=0.000004786176 liq=106.7K vol=3.6M src=dexscreener
+[2026-09-07T16:13:36.795Z]   fone score=40 1h=-0.57% 5m=warming(4 samples) price=$0.009565 priceSOL=0.000092335167 liq=615.0K vol=4.8M src=dexscreener
+[2026-09-07T16:13:36.795Z]   TROLL score=41 1h=-1.45% 5m=warming(4 samples) price=$0.04795 priceSOL=0.000462882518 liq=3.2M vol=2.0M src=dexscreener
+[2026-09-07T16:13:36.795Z]   PUMP score=42 1h=-1.90% 5m=warming(4 samples) price=$0.004237 priceSOL=0.000040901631 liq=22.1M vol=7.0M src=dexscreener
+[2026-09-07T16:13:36.795Z]   RAY score=40 1h=-0.31% 5m=warming(4 samples) price=$1.17 priceSOL=0.011294526499 liq=5.1M vol=5.5M src=dexscreener
+[2026-09-07T16:13:36.795Z]   BENNY score=20 1h=+139.00% 5m=warming(0 samples) price=$0.0001178 priceSOL=0.000001137175 liq=28.8K vol=13.3K src=dexscreener
+[2026-09-07T16:13:36.795Z]   LAPTOP score=17 1h=+54.59% 5m=warming(0 samples) price=$0.00001363 priceSOL=0.000000131576 liq=21.9K vol=5.8K src=dexscreener
+[2026-09-07T16:13:36.795Z]   SDOGE score=5 1h=+486.00% 5m=warming(0 samples) price=$0.00001564 priceSOL=0.000000150980 liq=0 vol=1 src=dexscreener
+[2026-09-07T16:13:36.796Z]   ROBINDOG score=35 1h=-99.95% 5m=warming(0 samples) price=$0.00000003 priceSOL=0.000000000270 liq=6 vol=6.4K src=dexscreener
+[2026-09-07T16:13:36.796Z]   RICK score=35 1h=-96.75% 5m=warming(0 samples) price=$0.00000001 priceSOL=0.000000000073 liq=17 vol=268 src=dexscreener
+[2026-09-07T16:13:36.796Z] [POLICY] mode=watchOnly minScore=60 maxBuys=5 regime=consolidation size=1x health=100/100 (HEALTHY)
+[2026-09-07T16:13:36.799Z] [POLICY] watchOnly mode — scanning only, no entries this window
+[2026-09-07T16:13:36.801Z] [TA] LOOM research=33 rec=AVOID consensus=bearish risk=low dataQuality=ok circuit=FILTER (mode=SHADOW)
+[2026-09-07T16:13:36.804Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:13:36.804Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:13:36.804Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:13:36.805Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:13:36.806Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:13:36.806Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:13:36.806Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:13:36.806Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:13:36.807Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:13:36.807Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:13:36.808Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:13:36.808Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:13:36.808Z] [ATLAS] LOOM research=36 rec=HOLD consensus=mixed risk=undefined dataQuality=ok V1=64 (mode=SHADOW)
+[2026-09-07T16:13:36.808Z] [ATLAS-PRED] id=P1788797616803-JIA8TZ agent=technical dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797616803
+[2026-09-07T16:13:36.808Z] [ATLAS-PRED] id=P1788797616803-LBQUMU agent=momentum dir=bullish conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797616803
+[2026-09-07T16:13:36.808Z] [ATLAS-PRED] id=P1788797616803-45ET76 agent=volatility dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797616803
+[2026-09-07T16:13:36.808Z] [ATLAS-PRED] id=P1788797616803-9T0JRV agent=sentiment dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797616803
+[2026-09-07T16:13:36.808Z] [ATLAS-PRED] id=P1788797616803-CEKMYV agent=solana dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797616803
+[2026-09-07T16:13:36.808Z] [ATLAS-PRED] id=P1788797616803-CIR1J2 agent=onchain dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797616803
+[2026-09-07T16:13:36.808Z] [ATLAS-PRED] id=P1788797616803-KYYJNT agent=manipulation dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797616803
+[2026-09-07T16:13:36.809Z] [ATLAS-PRED] id=P1788797616803-ZD1Y3O agent=technical dir=neutral conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797616803
+[2026-09-07T16:13:36.809Z] [ATLAS-PRED] id=P1788797616803-KSDJIQ agent=momentum dir=bearish conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797616803
+[2026-09-07T16:13:36.809Z] [ATLAS-PRED] id=P1788797616803-4KWNPE agent=volatility dir=neutral conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797616803
+[2026-09-07T16:13:36.809Z] [ATLAS-PRED] id=P1788797616803-YQXW6U agent=sentiment dir=neutral conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797616803
+[2026-09-07T16:13:36.809Z] [ATLAS-PRED] id=P1788797616803-FY7O2N agent=solana dir=neutral conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797616803
+[2026-09-07T16:13:36.809Z] [ATLAS-PRED] id=P1788797616803-1SXP0Z agent=onchain dir=neutral conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797616803
+[2026-09-07T16:13:36.809Z] [ATLAS-PRED] id=P1788797616803-S0H4GO agent=manipulation dir=neutral conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797616803
+[2026-09-07T16:13:36.809Z] [ATLAS-PRED] id=P1788797616803-NLQ6R6 agent=sentiment dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797616803
+[2026-09-07T16:13:36.809Z] [ATLAS-PRED] id=P1788797616803-EO6JGQ agent=solana dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797616803
+[2026-09-07T16:13:36.809Z] [ATLAS-PRED] id=P1788797616803-2R4693 agent=onchain dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797616803
+[2026-09-07T16:13:36.809Z] [ATLAS-PRED] id=P1788797616803-11TR6T agent=manipulation dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797616803
+[2026-09-07T16:13:45.279Z] [HISTORY-SKIP] 14/37 token(s) had no usable price this cycle
+[2026-09-07T16:13:45.279Z] [SAMPLER] recorded 23 price sample(s)
+[2026-09-07T16:14:11.122Z] [HISTORY-SKIP] 20/37 token(s) had no usable price this cycle
+[2026-09-07T16:14:11.122Z] [SAMPLER] recorded 17 price sample(s)
+[2026-09-07T16:14:17.926Z] [HISTORY-SKIP] 14/37 token(s) had no usable price this cycle
+[2026-09-07T16:14:17.926Z] [SAMPLER] recorded 23 price sample(s)
+[2026-09-07T16:14:34.756Z] [HISTORY-SKIP] 14/37 token(s) had no usable price this cycle
+[2026-09-07T16:14:34.756Z] [SAMPLER] recorded 23 price sample(s)
+[2026-09-07T16:14:42.789Z] [DISCOVERY-SKIP] discovery feed gt-trending unavailable (gt-trending: timeout after 8000ms) — continuing with the others
+[2026-09-07T16:14:53.827Z] [SCAN #1792] 21 real candidate(s)
+[2026-09-07T16:14:53.828Z]   BTC score=40 1h=+24.57% 5m=warming(7 samples) price=$0.001466 priceSOL=0.000014158779 liq=161.4K vol=2.6M src=dexscreener
+[2026-09-07T16:14:53.828Z]   $HACHI score=26 1h=-0.02% 5m=warming(8 samples) price=$0 priceSOL=0.000000000016 liq=65.6K vol=37.2K src=dexscreener
+[2026-09-07T16:14:53.828Z]   NASDIQ score=32 1h=+80.94% 5m=warming(8 samples) price=$0.0002303 priceSOL=0.000002224261 liq=40.3K vol=513.6K src=dexscreener
+[2026-09-07T16:14:53.828Z]   OTC score=32 1h=+213.00% 5m=warming(8 samples) price=$0.0002379 priceSOL=0.000002297663 liq=40.6K vol=351.2K src=dexscreener
+[2026-09-07T16:14:53.828Z]   JR2000 score=36 1h=+101.00% 5m=warming(8 samples) price=$0.0005179 priceSOL=0.000005001932 liq=61.7K vol=697.8K src=dexscreener
+[2026-09-07T16:14:53.828Z]   LAPTOP score=62 1h=-43.98% 5m=warming(8 samples) price=$0.00009626 priceSOL=0.000000929689 liq=26.7K vol=1.4M src=dexscreener
+[2026-09-07T16:14:53.828Z]   NIVI score=32 1h=+86.84% 5m=warming(8 samples) price=$0.0001395 priceSOL=0.000001347305 liq=31.3K vol=595.1K src=dexscreener
+[2026-09-07T16:14:53.828Z]   TRONK score=30 1h=-8.98% 5m=warming(0 samples) price=$0.00000467 priceSOL=0.000000045065 liq=5.0K vol=5.3M src=dexscreener
+[2026-09-07T16:14:53.829Z]   LAPTOP score=36 1h=+289.00% 5m=warming(0 samples) price=$0.0003968 priceSOL=0.000003832335 liq=53.8K vol=814.2K src=dexscreener
+[2026-09-07T16:14:53.829Z]   Zebrigrade score=62 1h=-44.33% 5m=warming(0 samples) price=$0.0001064 priceSOL=0.000001027622 liq=30.4K vol=427.0K src=dexscreener
+[2026-09-07T16:14:53.829Z]   TOKEN score=22 1h=+5.74% 5m=warming(0 samples) price=$0.0002254 priceSOL=0.000002176936 liq=44.8K vol=31.5K src=dexscreener
+[2026-09-07T16:14:53.829Z]   jorky score=22 1h=+38.60% 5m=warming(0 samples) price=$0.00006576 priceSOL=0.000000635117 liq=20.1K vol=42.3K src=dexscreener
+[2026-09-07T16:14:53.829Z]   CATFLIX score=52 1h=-99.68% 5m=warming(0 samples) price=$0.00000209 priceSOL=0.000000020156 liq=2.3K vol=960.9K src=dexscreener
+[2026-09-07T16:14:53.830Z]   STONKTRUMP score=24 1h=-1.79% 5m=warming(0 samples) price=$0.00000212 priceSOL=0.000000020494 liq=2.4K vol=1.3M src=dexscreener
+[2026-09-07T16:14:53.830Z]   WUFF score=16 1h=+57.07% 5m=warming(0 samples) price=$0.00004369 priceSOL=0.000000421963 liq=17.5K vol=15.2K src=dexscreener
+[2026-09-07T16:14:53.830Z]   ALT score=40 1h=-17.00% 5m=warming(0 samples) price=$0.00003672 priceSOL=0.000000354646 liq=16.9K vol=248.9K src=dexscreener
+[2026-09-07T16:14:53.830Z]   NASDICK score=22 1h=+4.69% 5m=warming(0 samples) price=$0.0000032 priceSOL=0.000000030945 liq=3.3K vol=1.0M src=dexscreener
+[2026-09-07T16:14:53.830Z]   ZTRUMP score=24 1h=-1.98% 5m=warming(0 samples) price=$0.00000199 priceSOL=0.000000019210 liq=2.1K vol=668.0K src=dexscreener
+[2026-09-07T16:14:53.830Z]   PFI6900 score=30 1h=-8.82% 5m=warming(0 samples) price=$0.00000596 priceSOL=0.000000057562 liq=5.0K vol=454.0K src=dexscreener
+[2026-09-07T16:14:53.830Z]   PUMPANY score=21 1h=+48.24% 5m=warming(0 samples) price=$0.00006317 priceSOL=0.000000610102 liq=19.8K vol=68.7K src=dexscreener
+[2026-09-07T16:14:53.830Z]   Pumployed score=29 1h=+62.49% 5m=warming(0 samples) price=$0.00001449 priceSOL=0.000000139946 liq=23.1K vol=197.0K src=dexscreener
+[2026-09-07T16:14:53.830Z] [POLICY] mode=watchOnly minScore=60 maxBuys=5 regime=consolidation size=1x health=75/100 (DEGRADED)
+[2026-09-07T16:14:53.834Z] [POLICY] watchOnly mode — scanning only, no entries this window
+[2026-09-07T16:14:53.835Z] [TA] LAPTOP research=32 rec=AVOID consensus=bearish risk=medium dataQuality=ok circuit=FILTER (mode=SHADOW)
+[2026-09-07T16:14:53.843Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:14:53.844Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:14:53.844Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:14:53.844Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:14:53.846Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:14:53.846Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:14:53.846Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:14:53.846Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:14:53.847Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:14:53.847Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:14:53.847Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:14:53.848Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:14:53.848Z] [ATLAS] LAPTOP research=36 rec=HOLD consensus=mixed risk=undefined dataQuality=ok V1=62 (mode=SHADOW)
+[2026-09-07T16:14:53.848Z] [ATLAS-PRED] id=P1788797693836-P1POE1 agent=technical dir=neutral conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797693836
+[2026-09-07T16:14:53.848Z] [ATLAS-PRED] id=P1788797693836-VY2HK0 agent=momentum dir=bearish conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797693836
+[2026-09-07T16:14:53.848Z] [ATLAS-PRED] id=P1788797693836-DUPZFP agent=volatility dir=neutral conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797693836
+[2026-09-07T16:14:53.848Z] [ATLAS-PRED] id=P1788797693836-9ZUPK9 agent=regime dir=bearish conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797693836
+[2026-09-07T16:14:53.848Z] [ATLAS-PRED] id=P1788797693836-SQV5OA agent=sentiment dir=neutral conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797693836
+[2026-09-07T16:14:53.848Z] [ATLAS-PRED] id=P1788797693836-0GA0WF agent=solana dir=neutral conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797693836
+[2026-09-07T16:14:53.848Z] [ATLAS-PRED] id=P1788797693836-GUYVYU agent=onchain dir=neutral conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797693836
+[2026-09-07T16:14:53.848Z] [ATLAS-PRED] id=P1788797693836-RWEP40 agent=manipulation dir=neutral conf=0 mint=9fEX8cjAyYLxUEX6E7TqwPKHXbqs9ANFKtTAeibzFYD8 ts=1788797693836
+[2026-09-07T16:14:53.848Z] [ATLAS-PRED] id=P1788797693836-WRQZQQ agent=sentiment dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797693836
+[2026-09-07T16:14:53.848Z] [ATLAS-PRED] id=P1788797693836-5DHP1F agent=solana dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797693836
+[2026-09-07T16:14:53.848Z] [ATLAS-PRED] id=P1788797693836-ENZ0A6 agent=onchain dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797693836
+[2026-09-07T16:14:53.848Z] [ATLAS-PRED] id=P1788797693836-U13D6Q agent=manipulation dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797693836
+[2026-09-07T16:14:53.849Z] [ATLAS-PRED] id=P1788797693836-IZ3RRC agent=sentiment dir=neutral conf=0 mint=69i2k5bwac9f7UAackSGN1kXAngvttEcyMBfowkpump ts=1788797693836
+[2026-09-07T16:14:53.849Z] [ATLAS-PRED] id=P1788797693836-1TLAY9 agent=solana dir=neutral conf=0 mint=69i2k5bwac9f7UAackSGN1kXAngvttEcyMBfowkpump ts=1788797693836
+[2026-09-07T16:14:53.849Z] [ATLAS-PRED] id=P1788797693836-NWOA3I agent=onchain dir=neutral conf=0 mint=69i2k5bwac9f7UAackSGN1kXAngvttEcyMBfowkpump ts=1788797693836
+[2026-09-07T16:14:53.850Z] [ATLAS-PRED] id=P1788797693836-BN1FB9 agent=manipulation dir=neutral conf=0 mint=69i2k5bwac9f7UAackSGN1kXAngvttEcyMBfowkpump ts=1788797693836
+[2026-09-07T16:14:56.826Z] [HISTORY-SKIP] 20/37 token(s) had no usable price this cycle
+[2026-09-07T16:14:56.826Z] [SAMPLER] recorded 17 price sample(s)
+[2026-09-07T16:15:00.411Z] [HISTORY-SKIP] 2/21 token(s) had no usable price this cycle
+[2026-09-07T16:15:00.412Z] [SAMPLER] recorded 19 price sample(s)
+[2026-09-07T16:15:15.115Z] [HISTORY-SKIP] 2/21 token(s) had no usable price this cycle
+[2026-09-07T16:15:15.115Z] [SAMPLER] recorded 19 price sample(s)
+[2026-09-07T16:15:29.997Z] [HISTORY-SKIP] 2/21 token(s) had no usable price this cycle
+[2026-09-07T16:15:29.998Z] [SAMPLER] recorded 19 price sample(s)
+[2026-09-07T16:15:32.472Z] [SCAN #1793] 35 real candidate(s)
+[2026-09-07T16:15:32.474Z]   BTC score=40 1h=+26.58% 5m=warming(10 samples) price=$0.001489 priceSOL=0.000014369813 liq=162.7K vol=2.6M src=dexscreener
+[2026-09-07T16:15:32.474Z]   $HACHI score=26 1h=-0.02% 5m=warming(12 samples) price=$0 priceSOL=0.000000000016 liq=65.6K vol=37.2K src=dexscreener
+[2026-09-07T16:15:32.475Z]   NASDIQ score=32 1h=+89.35% 5m=warming(12 samples) price=$0.0002532 priceSOL=0.000002443544 liq=42.3K vol=516.9K src=dexscreener
+[2026-09-07T16:15:32.475Z]   OTC score=32 1h=+223.00% 5m=warming(12 samples) price=$0.0002452 priceSOL=0.000002366339 liq=41.3K vol=352.7K src=dexscreener
+[2026-09-07T16:15:32.475Z]   JR2000 score=36 1h=+123.00% 5m=warming(12 samples) price=$0.0004996 priceSOL=0.000004821463 liq=60.6K vol=701.0K src=dexscreener
+[2026-09-07T16:15:32.475Z]   LAPTOP score=45 1h=-15.21% 5m=warming(12 samples) price=$0.0001016 priceSOL=0.000000980506 liq=27.5K vol=1.4M src=dexscreener
+[2026-09-07T16:15:32.475Z]   NIVI score=32 1h=+59.13% 5m=warming(12 samples) price=$0.0001188 priceSOL=0.000001146497 liq=28.8K vol=622.8K src=dexscreener
+[2026-09-07T16:15:32.475Z]   LAPTOP score=36 1h=+357.00% 5m=warming(3 samples) price=$0.0004656 priceSOL=0.000004493341 liq=58.5K vol=856.6K src=dexscreener
+[2026-09-07T16:15:32.476Z]   TRONK score=25 1h=+9.73% 5m=warming(3 samples) price=$0.00000485 priceSOL=0.000000046777 liq=5.1K vol=5.3M src=dexscreener
+[2026-09-07T16:15:32.476Z]   Zebrigrade score=62 1h=-44.25% 5m=warming(3 samples) price=$0.0001065 priceSOL=0.000001027794 liq=30.5K vol=427.0K src=dexscreener
+[2026-09-07T16:15:32.476Z]   TOKEN score=22 1h=+5.74% 5m=warming(3 samples) price=$0.0002254 priceSOL=0.000002175256 liq=44.8K vol=31.5K src=dexscreener
+[2026-09-07T16:15:32.476Z]   jorky score=18 1h=+34.23% 5m=warming(3 samples) price=$0.00006369 priceSOL=0.000000614650 liq=19.8K vol=42.8K src=dexscreener
+[2026-09-07T16:15:32.476Z]   WUFF score=16 1h=+57.31% 5m=warming(3 samples) price=$0.00004376 priceSOL=0.000000422312 liq=17.5K vol=15.2K src=dexscreener
+[2026-09-07T16:15:32.476Z]   ALT score=56 1h=-32.73% 5m=warming(3 samples) price=$0.00002977 priceSOL=0.000000287300 liq=15.2K vol=250.1K src=dexscreener
+[2026-09-07T16:15:32.476Z]   CINEMA score=17 1h=+3.39% 5m=warming(0 samples) price=$0.00004094 priceSOL=0.000000395097 liq=25.9K vol=3.5K src=dexscreener
+[2026-09-07T16:15:32.476Z]   ZCAT score=46 1h=-6.59% 5m=warming(7 samples) price=$0.1154 priceSOL=0.001113684617 liq=1.8M vol=270.7M src=dexscreener
+[2026-09-07T16:15:32.476Z]   Nasduck score=54 1h=-16.57% 5m=warming(9 samples) price=$0.001807 priceSOL=0.000017438718 liq=143.6K vol=14.0M src=dexscreener
+[2026-09-07T16:15:32.476Z]   STONK score=40 1h=+17.86% 5m=warming(9 samples) price=$0.1138 priceSOL=0.001098243582 liq=2.4M vol=38.6M src=dexscreener
+[2026-09-07T16:15:32.476Z]   OTC score=40 1h=+7.69% 5m=warming(9 samples) price=$0.01557 priceSOL=0.000150260567 liq=553.2K vol=8.0M src=dexscreener
+[2026-09-07T16:15:32.477Z]   AGI score=53 1h=-14.59% 5m=warming(7 samples) price=$0.00277 priceSOL=0.000026732291 liq=237.5K vol=7.5M src=dexscreener
+[2026-09-07T16:15:32.477Z]   CatGPT score=57 1h=-24.00% 5m=warming(9 samples) price=$0.0003773 priceSOL=0.000003641189 liq=61.0K vol=5.1M src=dexscreener
+[2026-09-07T16:15:32.477Z]   PURR score=53 1h=-15.74% 5m=warming(7 samples) price=$0.006046 priceSOL=0.000058347809 liq=451.6K vol=5.3M src=dexscreener
+[2026-09-07T16:15:32.477Z]   USELESS score=40 1h=+4.20% 5m=warming(9 samples) price=$0.2295 priceSOL=0.002214823393 liq=4.7M vol=9.5M src=dexscreener
+[2026-09-07T16:15:32.477Z]   CATE score=40 1h=+0.94% 5m=warming(9 samples) price=$0.03072 priceSOL=0.000296467863 liq=1.7M vol=5.1M src=dexscreener
+[2026-09-07T16:15:32.477Z]   SOLCAT score=51 1h=-12.80% 5m=warming(9 samples) price=$0.0009128 priceSOL=0.000008809110 liq=131.6K vol=1.6M src=dexscreener
+[2026-09-07T16:15:32.477Z]   ANSEM score=44 1h=-4.37% 5m=warming(9 samples) price=$0.1946 priceSOL=0.001878015827 liq=2.5M vol=3.4M src=dexscreener
+[2026-09-07T16:15:32.477Z]   LOOM score=65 1h=-29.34% 5m=warming(9 samples) price=$0.0004976 priceSOL=0.000004802162 liq=106.9K vol=3.6M src=dexscreener
+[2026-09-07T16:15:32.477Z]   fone score=41 1h=-1.10% 5m=warming(9 samples) price=$0.009604 priceSOL=0.000092684810 liq=616.2K vol=4.8M src=dexscreener
+[2026-09-07T16:15:32.478Z]   RAY score=40 1h=+0.72% 5m=warming(7 samples) price=$1.17 priceSOL=0.011291256514 liq=5.1M vol=5.4M src=dexscreener
+[2026-09-07T16:15:32.478Z]   TROLL score=42 1h=-1.90% 5m=warming(9 samples) price=$0.04775 priceSOL=0.000460818375 liq=3.2M vol=2.0M src=dexscreener
+[2026-09-07T16:15:32.478Z]   PUMP score=41 1h=-1.18% 5m=warming(7 samples) price=$0.004243 priceSOL=0.000040947693 liq=22.1M vol=7.1M src=dexscreener
+[2026-09-07T16:15:32.478Z]   Pumployed score=29 1h=+69.24% 5m=warming(0 samples) price=$0.00001509 priceSOL=0.000000145628 liq=23.7K vol=223.3K src=dexscreener
+[2026-09-07T16:15:32.478Z]   DESKTOP score=38 1h=-100.00% 5m=warming(0 samples) price=$0 priceSOL=0.000000000005 liq=1 vol=13.2K src=dexscreener
+[2026-09-07T16:15:32.478Z]   SHROOM score=38 1h=-100.00% 5m=warming(0 samples) price=$0 priceSOL=0.000000000005 liq=1 vol=11.8K src=dexscreener
+[2026-09-07T16:15:32.478Z]   Jobcoin score=38 1h=-100.00% 5m=warming(0 samples) price=$0 priceSOL=0.000000000005 liq=1 vol=12.7K src=dexscreener
+[2026-09-07T16:15:32.478Z] [POLICY] mode=watchOnly minScore=60 maxBuys=5 regime=consolidation size=1x health=75/100 (DEGRADED)
+[2026-09-07T16:15:32.482Z] [POLICY] watchOnly mode — scanning only, no entries this window
+[2026-09-07T16:15:32.482Z] [TA] LOOM research=33 rec=AVOID consensus=bearish risk=low dataQuality=ok circuit=FILTER (mode=SHADOW)
+[2026-09-07T16:15:32.486Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:15:32.486Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:15:32.487Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:15:32.487Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:15:32.488Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:15:32.488Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:15:32.489Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:15:32.490Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:15:32.493Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:15:32.493Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:15:32.493Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:15:32.493Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:15:32.494Z] [ATLAS] LOOM research=35 rec=HOLD consensus=mixed risk=undefined dataQuality=ok V1=65 (mode=SHADOW)
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-58H49U agent=technical dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-WC8P4A agent=momentum dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-67944C agent=volatility dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-SG1524 agent=regime dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-A11520 agent=sentiment dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-LMBR49 agent=solana dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-TW3TZE agent=onchain dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-8SGTA1 agent=manipulation dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-N3E5BY agent=technical dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-PHYYNT agent=momentum dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-D7DG4K agent=volatility dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-A8NGZS agent=sentiment dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-E5LGKV agent=solana dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-ANIB9L agent=onchain dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-FGIY54 agent=manipulation dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-LNB4OR agent=technical dir=neutral conf=0 mint=9GGGhze1NnQwcABTzxdxx89BEFLFtDueHhkwh6japump ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-JHWEVX agent=momentum dir=bullish conf=0 mint=9GGGhze1NnQwcABTzxdxx89BEFLFtDueHhkwh6japump ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-RP922U agent=volatility dir=neutral conf=0 mint=9GGGhze1NnQwcABTzxdxx89BEFLFtDueHhkwh6japump ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-DSXB4S agent=regime dir=neutral conf=0 mint=9GGGhze1NnQwcABTzxdxx89BEFLFtDueHhkwh6japump ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-4CXPSL agent=sentiment dir=neutral conf=0 mint=9GGGhze1NnQwcABTzxdxx89BEFLFtDueHhkwh6japump ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-TRZCOL agent=solana dir=neutral conf=0 mint=9GGGhze1NnQwcABTzxdxx89BEFLFtDueHhkwh6japump ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-A8RDBX agent=onchain dir=neutral conf=0 mint=9GGGhze1NnQwcABTzxdxx89BEFLFtDueHhkwh6japump ts=1788797732485
+[2026-09-07T16:15:32.494Z] [ATLAS-PRED] id=P1788797732485-T4GO18 agent=manipulation dir=neutral conf=0 mint=9GGGhze1NnQwcABTzxdxx89BEFLFtDueHhkwh6japump ts=1788797732485
+[2026-09-07T16:15:45.287Z] [HISTORY-SKIP] 12/35 token(s) had no usable price this cycle
+[2026-09-07T16:15:45.288Z] [SAMPLER] recorded 23 price sample(s)
+[2026-09-07T16:16:00.077Z] [HISTORY-SKIP] 12/35 token(s) had no usable price this cycle
+[2026-09-07T16:16:00.077Z] [SAMPLER] recorded 23 price sample(s)
+[2026-09-07T16:16:14.985Z] [HISTORY-SKIP] 12/35 token(s) had no usable price this cycle
+[2026-09-07T16:16:14.985Z] [SAMPLER] recorded 23 price sample(s)
+[2026-09-07T16:16:30.703Z] [HISTORY-SKIP] 13/35 token(s) had no usable price this cycle
+[2026-09-07T16:16:30.703Z] [SAMPLER] recorded 22 price sample(s)
+[2026-09-07T16:16:32.257Z] [SCAN #1794] 33 real candidate(s)
+[2026-09-07T16:16:32.257Z]   BTC score=56 1h=+23.67% 5m=+4.32% price=$0.001522 priceSOL=0.000014689702 liq=164.5K vol=2.6M src=dexscreener
+[2026-09-07T16:16:32.258Z]   $HACHI score=26 1h=-0.40% 5m=+0.00% price=$0 priceSOL=0.000000000015 liq=65.5K vol=37.1K src=dexscreener
+[2026-09-07T16:16:32.258Z]   NASDIQ score=62 1h=+92.52% 5m=+21.02% price=$0.0002694 priceSOL=0.000002600135 liq=43.7K vol=521.6K src=dexscreener
+[2026-09-07T16:16:32.258Z]   OTC score=32 1h=+217.00% 5m=+0.21% price=$0.0002407 priceSOL=0.000002323135 liq=40.9K vol=354.0K src=dexscreener
+[2026-09-07T16:16:32.258Z]   JR2000 score=32 1h=+46.00% 5m=-41.25% price=$0.000336 priceSOL=0.000003242930 liq=49.4K vol=709.8K src=dexscreener
+[2026-09-07T16:16:32.258Z]   NIVI score=59 1h=+63.59% 5m=+7.10% price=$0.0001222 priceSOL=0.000001179423 liq=29.3K vol=649.6K src=dexscreener
+[2026-09-07T16:16:32.258Z]   LAPTOP score=36 1h=+327.00% 5m=warming(3 samples) price=$0.0004349 priceSOL=0.000004197471 liq=56.6K vol=889.2K src=dexscreener
+[2026-09-07T16:16:32.258Z]   TRONK score=25 1h=+9.73% 5m=warming(3 samples) price=$0.00000485 priceSOL=0.000000046781 liq=5.1K vol=5.3M src=dexscreener
+[2026-09-07T16:16:32.258Z]   Zebrigrade score=62 1h=-41.37% 5m=warming(3 samples) price=$0.0001083 priceSOL=0.000001045266 liq=30.7K vol=425.1K src=dexscreener
+[2026-09-07T16:16:32.258Z]   TOKEN score=22 1h=+5.58% 5m=warming(3 samples) price=$0.000225 priceSOL=0.000002171605 liq=44.7K vol=31.4K src=dexscreener
+[2026-09-07T16:16:32.258Z]   jorky score=18 1h=+36.22% 5m=warming(3 samples) price=$0.00006463 priceSOL=0.000000623781 liq=20.0K vol=43.4K src=dexscreener
+[2026-09-07T16:16:32.258Z]   LAPTOP score=41 1h=-10.75% 5m=-6.40% price=$0.00007463 priceSOL=0.000000720297 liq=23.3K vol=1.4M src=dexscreener
+[2026-09-07T16:16:32.259Z]   WUFF score=16 1h=+60.70% 5m=warming(3 samples) price=$0.00004386 priceSOL=0.000000423318 liq=17.6K vol=15.2K src=dexscreener
+[2026-09-07T16:16:32.259Z]   ALT score=58 1h=-39.60% 5m=warming(3 samples) price=$0.00002672 priceSOL=0.000000257890 liq=14.4K vol=255.0K src=dexscreener
+[2026-09-07T16:16:32.259Z]   ZCAT score=46 1h=-7.29% 5m=-0.35% price=$0.1149 priceSOL=0.001108966316 liq=1.8M vol=270.7M src=dexscreener
+[2026-09-07T16:16:32.259Z]   Nasduck score=50 1h=-11.21% 5m=-6.74% price=$0.001855 priceSOL=0.000017903677 liq=145.5K vol=14.0M src=dexscreener
+[2026-09-07T16:16:32.259Z]   STONK score=49 1h=+15.85% 5m=+2.49% price=$0.1151 priceSOL=0.001110896632 liq=2.4M vol=38.6M src=dexscreener
+[2026-09-07T16:16:32.259Z]   OTC score=46 1h=+9.43% 5m=+1.73% price=$0.01592 priceSOL=0.000153653122 liq=559.5K vol=8.0M src=dexscreener
+[2026-09-07T16:16:32.259Z]   AGI score=52 1h=-13.95% 5m=-6.49% price=$0.002696 priceSOL=0.000026020654 liq=234.4K vol=7.5M src=dexscreener
+[2026-09-07T16:16:32.259Z]   CatGPT score=56 1h=-22.89% 5m=-1.56% price=$0.0003664 priceSOL=0.000003536338 liq=60.1K vol=5.1M src=dexscreener
+[2026-09-07T16:16:32.259Z]   PURR score=53 1h=-15.16% 5m=+0.36% price=$0.006074 priceSOL=0.000058623685 liq=451.7K vol=5.3M src=dexscreener
+[2026-09-07T16:16:32.260Z]   USELESS score=45 1h=+3.50% 5m=+1.50% price=$0.2299 priceSOL=0.002218897790 liq=4.7M vol=9.5M src=dexscreener
+[2026-09-07T16:16:32.260Z]   SOLCAT score=52 1h=-13.53% 5m=-1.87% price=$0.0009111 priceSOL=0.000008793553 liq=131.5K vol=1.6M src=dexscreener
+[2026-09-07T16:16:32.260Z]   CATE score=40 1h=+1.21% 5m=+0.13% price=$0.03081 priceSOL=0.000297365119 liq=1.8M vol=5.1M src=dexscreener
+[2026-09-07T16:16:32.260Z]   ANSEM score=43 1h=-3.48% 5m=-0.71% price=$0.1964 priceSOL=0.001895569926 liq=2.6M vol=3.4M src=dexscreener
+[2026-09-07T16:16:32.260Z]   LOOM score=76 1h=-32.67% 5m=+2.44% price=$0.0004988 priceSOL=0.000004814207 liq=107.1K vol=3.6M src=dexscreener
+[2026-09-07T16:16:32.260Z]   fone score=41 1h=-0.76% 5m=-0.05% price=$0.009561 priceSOL=0.000092278738 liq=614.9K vol=4.8M src=dexscreener
+[2026-09-07T16:16:32.260Z]   RAY score=40 1h=+1.10% 5m=+0.00% price=$1.17 priceSOL=0.011292346299 liq=1.6M vol=23.1M src=dexscreener
+[2026-09-07T16:16:32.261Z]   TROLL score=41 1h=-1.65% 5m=-0.02% price=$0.04794 priceSOL=0.000462696651 liq=3.2M vol=2.0M src=dexscreener
+[2026-09-07T16:16:32.261Z]   PUMP score=43 1h=-1.17% 5m=+0.74% price=$0.004244 priceSOL=0.000040961297 liq=22.1M vol=7.1M src=dexscreener
+[2026-09-07T16:16:32.261Z]   DESKTOP score=38 1h=-100.00% 5m=warming(0 samples) price=$0 priceSOL=0.000000000005 liq=1 vol=13.2K src=dexscreener
+[2026-09-07T16:16:32.261Z]   SHROOM score=38 1h=-100.00% 5m=warming(0 samples) price=$0 priceSOL=0.000000000005 liq=1 vol=11.8K src=dexscreener
+[2026-09-07T16:16:32.261Z]   RICK score=35 1h=-96.75% 5m=warming(0 samples) price=$0.00000001 priceSOL=0.000000000073 liq=17 vol=268 src=dexscreener
+[2026-09-07T16:16:32.261Z] [POLICY] mode=watchOnly minScore=60 maxBuys=5 regime=consolidation size=1x health=75/100 (DEGRADED)
+[2026-09-07T16:16:32.266Z] [POLICY] watchOnly mode — scanning only, no entries this window
+[2026-09-07T16:16:32.266Z] [TA] NASDIQ research=47 rec=HOLD consensus=mixed risk=medium dataQuality=ok circuit=FILTER (mode=SHADOW)
+[2026-09-07T16:16:32.268Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:16:32.269Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:16:32.269Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:16:32.269Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:16:32.270Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:16:32.270Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:16:32.271Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:16:32.271Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:16:32.272Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:16:32.272Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:16:32.272Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:16:32.272Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:16:32.273Z] [ATLAS] LOOM research=35 rec=HOLD consensus=mixed risk=undefined dataQuality=ok V1=76 (mode=SHADOW)
+[2026-09-07T16:16:32.273Z] [ATLAS-PRED] id=P1788797792267-HBJJ1P agent=technical dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797792267
+[2026-09-07T16:16:32.273Z] [ATLAS-PRED] id=P1788797792267-5T6IAD agent=momentum dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797792267
+[2026-09-07T16:16:32.273Z] [ATLAS-PRED] id=P1788797792267-JYKQQK agent=volatility dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797792267
+[2026-09-07T16:16:32.273Z] [ATLAS-PRED] id=P1788797792267-7DGKQS agent=regime dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797792267
+[2026-09-07T16:16:32.273Z] [ATLAS-PRED] id=P1788797792267-OHHM46 agent=sentiment dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797792267
+[2026-09-07T16:16:32.273Z] [ATLAS-PRED] id=P1788797792267-XJT0DI agent=solana dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797792267
+[2026-09-07T16:16:32.273Z] [ATLAS-PRED] id=P1788797792267-1QPRXM agent=onchain dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797792267
+[2026-09-07T16:16:32.273Z] [ATLAS-PRED] id=P1788797792267-PRA0AN agent=manipulation dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797792267
+[2026-09-07T16:16:32.273Z] [ATLAS-PRED] id=P1788797792267-RAMI0X agent=technical dir=bullish conf=0 mint=BzzfHDj1LW8xEPdVJiHwC5y4DBrBwje6d1qr95ZVpump ts=1788797792267
+[2026-09-07T16:16:32.273Z] [ATLAS-PRED] id=P1788797792267-ZF530S agent=momentum dir=bullish conf=0 mint=BzzfHDj1LW8xEPdVJiHwC5y4DBrBwje6d1qr95ZVpump ts=1788797792267
+[2026-09-07T16:16:32.273Z] [ATLAS-PRED] id=P1788797792267-7IS10I agent=volatility dir=neutral conf=0 mint=BzzfHDj1LW8xEPdVJiHwC5y4DBrBwje6d1qr95ZVpump ts=1788797792267
+[2026-09-07T16:16:32.273Z] [ATLAS-PRED] id=P1788797792267-4IUE7X agent=regime dir=bullish conf=0 mint=BzzfHDj1LW8xEPdVJiHwC5y4DBrBwje6d1qr95ZVpump ts=1788797792267
+[2026-09-07T16:16:32.273Z] [ATLAS-PRED] id=P1788797792267-05RCMV agent=sentiment dir=neutral conf=0 mint=BzzfHDj1LW8xEPdVJiHwC5y4DBrBwje6d1qr95ZVpump ts=1788797792267
+[2026-09-07T16:16:32.273Z] [ATLAS-PRED] id=P1788797792267-YMQUDD agent=solana dir=neutral conf=0 mint=BzzfHDj1LW8xEPdVJiHwC5y4DBrBwje6d1qr95ZVpump ts=1788797792267
+[2026-09-07T16:16:32.273Z] [ATLAS-PRED] id=P1788797792267-URI0WF agent=onchain dir=neutral conf=0 mint=BzzfHDj1LW8xEPdVJiHwC5y4DBrBwje6d1qr95ZVpump ts=1788797792267
+[2026-09-07T16:16:32.274Z] [ATLAS-PRED] id=P1788797792267-EST6H8 agent=manipulation dir=neutral conf=0 mint=BzzfHDj1LW8xEPdVJiHwC5y4DBrBwje6d1qr95ZVpump ts=1788797792267
+[2026-09-07T16:16:32.274Z] [ATLAS-PRED] id=P1788797792267-S644GF agent=technical dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797792267
+[2026-09-07T16:16:32.274Z] [ATLAS-PRED] id=P1788797792267-VFQBS6 agent=momentum dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797792267
+[2026-09-07T16:16:32.274Z] [ATLAS-PRED] id=P1788797792267-2OUM68 agent=volatility dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797792267
+[2026-09-07T16:16:32.274Z] [ATLAS-PRED] id=P1788797792267-RMYVS3 agent=sentiment dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797792267
+[2026-09-07T16:16:32.274Z] [ATLAS-PRED] id=P1788797792267-WAA6KX agent=solana dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797792267
+[2026-09-07T16:16:32.274Z] [ATLAS-PRED] id=P1788797792267-T2OLJY agent=onchain dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797792267
+[2026-09-07T16:16:32.274Z] [ATLAS-PRED] id=P1788797792267-4LLXVV agent=manipulation dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797792267
+[2026-09-07T16:16:45.369Z] [HISTORY-SKIP] 8/33 token(s) had no usable price this cycle
+[2026-09-07T16:16:45.369Z] [SAMPLER] recorded 25 price sample(s)
+[2026-09-07T16:17:00.261Z] [HISTORY-SKIP] 8/33 token(s) had no usable price this cycle
+[2026-09-07T16:17:00.261Z] [SAMPLER] recorded 25 price sample(s)
+[2026-09-07T16:17:14.891Z] [HISTORY-SKIP] 8/33 token(s) had no usable price this cycle
+[2026-09-07T16:17:14.892Z] [SAMPLER] recorded 25 price sample(s)
+[2026-09-07T16:17:30.363Z] [HISTORY-SKIP] 8/33 token(s) had no usable price this cycle
+[2026-09-07T16:17:30.363Z] [SAMPLER] recorded 25 price sample(s)
+[2026-09-07T16:17:31.527Z] [SCAN #1795] 32 real candidate(s)
+[2026-09-07T16:17:31.527Z]   BTC score=56 1h=+23.58% 5m=+4.46% price=$0.001525 priceSOL=0.000014730030 liq=164.7K vol=2.6M src=dexscreener
+[2026-09-07T16:17:31.528Z]   $HACHI score=22 1h=+0.03% 5m=+0.00% price=$0 priceSOL=0.000000000015 liq=45.1K vol=25.0K src=dexscreener
+[2026-09-07T16:17:31.528Z]   NASDIQ score=62 1h=+79.26% 5m=+9.48% price=$0.0002479 priceSOL=0.000002394475 liq=41.9K vol=524.4K src=dexscreener
+[2026-09-07T16:17:31.528Z]   OTC score=32 1h=+199.00% 5m=-4.66% price=$0.0002273 priceSOL=0.000002195499 liq=39.7K vol=356.3K src=dexscreener
+[2026-09-07T16:17:31.528Z]   JR2000 score=32 1h=+46.58% 5m=-42.96% price=$0.0003262 priceSOL=0.000003150778 liq=48.6K vol=710.8K src=dexscreener
+[2026-09-07T16:17:31.528Z]   NIVI score=32 1h=+35.95% 5m=-1.84% price=$0.0001015 priceSOL=0.000000980392 liq=26.6K vol=677.6K src=dexscreener
+[2026-09-07T16:17:31.528Z]   LAPTOP score=36 1h=+270.00% 5m=warming(3 samples) price=$0.0003769 priceSOL=0.000003640491 liq=52.6K vol=921.3K src=dexscreener
+[2026-09-07T16:17:31.528Z]   TRONK score=25 1h=+9.73% 5m=warming(3 samples) price=$0.00000485 priceSOL=0.000000046817 liq=5.1K vol=5.3M src=dexscreener
+[2026-09-07T16:17:31.528Z]   VC score=40 1h=+5986.00% 5m=warming(0 samples) price=$0.002921 priceSOL=0.000028214044 liq=145.5K vol=755.2K src=dexscreener
+[2026-09-07T16:17:31.528Z]   Zebrigrade score=62 1h=-40.77% 5m=warming(3 samples) price=$0.0001094 priceSOL=0.000001056699 liq=30.8K vol=425.0K src=dexscreener
+[2026-09-07T16:17:31.528Z]   TOKEN score=22 1h=+12.41% 5m=warming(3 samples) price=$0.0002396 priceSOL=0.000002314305 liq=46.2K vol=32.6K src=dexscreener
+[2026-09-07T16:17:31.528Z]   jorky score=18 1h=+31.05% 5m=warming(3 samples) price=$0.00006218 priceSOL=0.000000600599 liq=19.5K vol=44.0K src=dexscreener
+[2026-09-07T16:17:31.529Z]   LAPTOP score=55 1h=-26.99% 5m=-6.40% price=$0.00007814 priceSOL=0.000000754757 liq=23.9K vol=1.4M src=dexscreener
+[2026-09-07T16:17:31.529Z]   WUFF score=16 1h=+54.13% 5m=warming(3 samples) price=$0.00004342 priceSOL=0.000000419395 liq=17.4K vol=15.2K src=dexscreener
+[2026-09-07T16:17:31.529Z]   ALT score=58 1h=-41.73% 5m=warming(3 samples) price=$0.00002578 priceSOL=0.000000249010 liq=14.1K vol=255.6K src=dexscreener
+[2026-09-07T16:17:31.529Z]   ZCAT score=47 1h=-7.70% 5m=-0.52% price=$0.1147 priceSOL=0.001107891432 liq=1.8M vol=270.7M src=dexscreener
+[2026-09-07T16:17:31.529Z]   Nasduck score=55 1h=-17.07% 5m=-11.51% price=$0.00176 priceSOL=0.000016999903 liq=141.7K vol=14.0M src=dexscreener
+[2026-09-07T16:17:31.529Z]   STONK score=50 1h=+17.11% 5m=+2.76% price=$0.1154 priceSOL=0.001114652758 liq=2.4M vol=38.5M src=dexscreener
+[2026-09-07T16:17:31.529Z]   OTC score=47 1h=+11.34% 5m=+2.11% price=$0.01598 priceSOL=0.000154351396 liq=560.5K vol=8.0M src=dexscreener
+[2026-09-07T16:17:31.529Z]   AGI score=52 1h=-13.79% 5m=-6.87% price=$0.002685 priceSOL=0.000025934512 liq=233.9K vol=7.5M src=dexscreener
+[2026-09-07T16:17:31.529Z]   CatGPT score=57 1h=-17.93% 5m=+1.77% price=$0.0003788 priceSOL=0.000003658843 liq=61.2K vol=5.1M src=dexscreener
+[2026-09-07T16:17:31.529Z]   PURR score=54 1h=-14.26% 5m=+0.59% price=$0.006088 priceSOL=0.000058804211 liq=452.7K vol=5.3M src=dexscreener
+[2026-09-07T16:17:31.529Z]   USELESS score=43 1h=+3.21% 5m=+1.10% price=$0.229 priceSOL=0.002211919250 liq=4.7M vol=9.5M src=dexscreener
+[2026-09-07T16:17:31.529Z]   SOLCAT score=51 1h=-13.10% 5m=-2.81% price=$0.0009024 priceSOL=0.000008716314 liq=130.9K vol=1.6M src=dexscreener
+[2026-09-07T16:17:31.529Z]   CATE score=40 1h=+1.32% 5m=-0.13% price=$0.03073 priceSOL=0.000296822177 liq=1.7M vol=5.1M src=dexscreener
+[2026-09-07T16:17:31.530Z]   ANSEM score=44 1h=-4.70% 5m=-2.63% price=$0.1926 priceSOL=0.001860330339 liq=2.5M vol=3.5M src=dexscreener
+[2026-09-07T16:17:31.530Z]   LOOM score=76 1h=-33.22% 5m=+2.14% price=$0.0004973 priceSOL=0.000004803439 liq=106.9K vol=3.6M src=dexscreener
+[2026-09-07T16:17:31.530Z]   fone score=41 1h=-1.20% 5m=-0.37% price=$0.009531 priceSOL=0.000092060272 liq=613.9K vol=4.8M src=dexscreener
+[2026-09-07T16:17:31.530Z]   RAY score=40 1h=+1.16% 5m=+0.00% price=$1.17 priceSOL=0.011301072153 liq=5.1M vol=5.4M src=dexscreener
+[2026-09-07T16:17:31.530Z]   TROLL score=42 1h=-1.90% 5m=-0.48% price=$0.04772 priceSOL=0.000460929199 liq=3.2M vol=2.0M src=dexscreener
+[2026-09-07T16:17:31.530Z]   PUMP score=43 1h=-0.98% 5m=+0.74% price=$0.004244 priceSOL=0.000040992949 liq=22.1M vol=7.1M src=dexscreener
+[2026-09-07T16:17:31.530Z]   DOG score=35 1h=-90.79% 5m=warming(0 samples) price=$0 priceSOL=0.000000000034 liq=5 vol=36 src=dexscreener
+[2026-09-07T16:17:31.530Z] [POLICY] mode=watchOnly minScore=60 maxBuys=5 regime=consolidation size=1x health=75/100 (DEGRADED)
+[2026-09-07T16:17:31.533Z] [POLICY] watchOnly mode — scanning only, no entries this window
+[2026-09-07T16:17:31.534Z] [TA] LOOM research=33 rec=AVOID consensus=bearish risk=low dataQuality=ok circuit=FILTER (mode=SHADOW)
+[2026-09-07T16:17:31.535Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:17:31.535Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:17:31.536Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:17:31.536Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:17:31.537Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:17:31.537Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:17:31.537Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:17:31.537Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:17:31.538Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:17:31.538Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:17:31.538Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:17:31.539Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:17:31.539Z] [ATLAS] LOOM research=35 rec=HOLD consensus=mixed risk=undefined dataQuality=ok V1=76 (mode=SHADOW)
+[2026-09-07T16:17:31.539Z] [ATLAS-PRED] id=P1788797851535-1ETR9U agent=technical dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797851535
+[2026-09-07T16:17:31.539Z] [ATLAS-PRED] id=P1788797851535-JA68MC agent=momentum dir=bearish conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797851535
+[2026-09-07T16:17:31.539Z] [ATLAS-PRED] id=P1788797851535-NTI2O2 agent=volatility dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797851535
+[2026-09-07T16:17:31.539Z] [ATLAS-PRED] id=P1788797851535-AVLLHX agent=regime dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797851535
+[2026-09-07T16:17:31.539Z] [ATLAS-PRED] id=P1788797851535-VLL5G4 agent=sentiment dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797851535
+[2026-09-07T16:17:31.539Z] [ATLAS-PRED] id=P1788797851535-7787N8 agent=solana dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797851535
+[2026-09-07T16:17:31.539Z] [ATLAS-PRED] id=P1788797851535-M31CE1 agent=onchain dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797851535
+[2026-09-07T16:17:31.539Z] [ATLAS-PRED] id=P1788797851535-OB9K7A agent=manipulation dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797851535
+[2026-09-07T16:17:31.539Z] [ATLAS-PRED] id=P1788797851535-FCLR12 agent=technical dir=neutral conf=0 mint=BzzfHDj1LW8xEPdVJiHwC5y4DBrBwje6d1qr95ZVpump ts=1788797851535
+[2026-09-07T16:17:31.539Z] [ATLAS-PRED] id=P1788797851535-GTALPV agent=momentum dir=bearish conf=0 mint=BzzfHDj1LW8xEPdVJiHwC5y4DBrBwje6d1qr95ZVpump ts=1788797851535
+[2026-09-07T16:17:31.539Z] [ATLAS-PRED] id=P1788797851535-P9WSKO agent=volatility dir=neutral conf=0 mint=BzzfHDj1LW8xEPdVJiHwC5y4DBrBwje6d1qr95ZVpump ts=1788797851535
+[2026-09-07T16:17:31.539Z] [ATLAS-PRED] id=P1788797851535-NOQQD2 agent=regime dir=bearish conf=0 mint=BzzfHDj1LW8xEPdVJiHwC5y4DBrBwje6d1qr95ZVpump ts=1788797851535
+[2026-09-07T16:17:31.540Z] [ATLAS-PRED] id=P1788797851535-4G55W1 agent=sentiment dir=neutral conf=0 mint=BzzfHDj1LW8xEPdVJiHwC5y4DBrBwje6d1qr95ZVpump ts=1788797851535
+[2026-09-07T16:17:31.540Z] [ATLAS-PRED] id=P1788797851535-9EPF35 agent=solana dir=neutral conf=0 mint=BzzfHDj1LW8xEPdVJiHwC5y4DBrBwje6d1qr95ZVpump ts=1788797851535
+[2026-09-07T16:17:31.540Z] [ATLAS-PRED] id=P1788797851535-VA151Z agent=onchain dir=neutral conf=0 mint=BzzfHDj1LW8xEPdVJiHwC5y4DBrBwje6d1qr95ZVpump ts=1788797851535
+[2026-09-07T16:17:31.540Z] [ATLAS-PRED] id=P1788797851535-Q09X0B agent=manipulation dir=neutral conf=0 mint=BzzfHDj1LW8xEPdVJiHwC5y4DBrBwje6d1qr95ZVpump ts=1788797851535
+[2026-09-07T16:17:31.540Z] [ATLAS-PRED] id=P1788797851535-4TZIZ3 agent=technical dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797851535
+[2026-09-07T16:17:31.540Z] [ATLAS-PRED] id=P1788797851535-S6XY1A agent=momentum dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797851535
+[2026-09-07T16:17:31.540Z] [ATLAS-PRED] id=P1788797851535-P9YLDV agent=volatility dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797851535
+[2026-09-07T16:17:31.540Z] [ATLAS-PRED] id=P1788797851535-RYG8I7 agent=sentiment dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797851535
+[2026-09-07T16:17:31.540Z] [ATLAS-PRED] id=P1788797851535-KERRM4 agent=solana dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797851535
+[2026-09-07T16:17:31.540Z] [ATLAS-PRED] id=P1788797851535-K4W6D7 agent=onchain dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797851535
+[2026-09-07T16:17:31.540Z] [ATLAS-PRED] id=P1788797851535-9CBWAN agent=manipulation dir=neutral conf=0 mint=4pGzEnYp9YgWyg4EyxnaetoLrWWX5TjgDRd1zF5fcqC6 ts=1788797851535
+[2026-09-07T16:17:45.364Z] [HISTORY-SKIP] 11/32 token(s) had no usable price this cycle
+[2026-09-07T16:17:45.365Z] [SAMPLER] recorded 21 price sample(s)
+[2026-09-07T16:18:00.271Z] [HISTORY-SKIP] 11/32 token(s) had no usable price this cycle
+[2026-09-07T16:18:00.271Z] [SAMPLER] recorded 21 price sample(s)
+[2026-09-07T16:18:14.845Z] [HISTORY-SKIP] 11/32 token(s) had no usable price this cycle
+[2026-09-07T16:18:14.845Z] [SAMPLER] recorded 21 price sample(s)
+[2026-09-07T16:18:30.973Z] [HISTORY-SKIP] 10/32 token(s) had no usable price this cycle
+[2026-09-07T16:18:30.975Z] [SAMPLER] recorded 22 price sample(s)
+[2026-09-07T16:18:31.611Z] [SCAN #1796] 33 real candidate(s)
+[2026-09-07T16:18:31.612Z]   BTC score=65 1h=+19.63% 5m=+6.82% price=$0.001566 priceSOL=0.000015127512 liq=166.9K vol=2.6M src=dexscreener
+[2026-09-07T16:18:31.612Z]   $HACHI score=26 1h=-0.01% 5m=-0.12% price=$0 priceSOL=0.000000000015 liq=65.4K vol=37.2K src=dexscreener
+[2026-09-07T16:18:31.612Z]   NASDIQ score=62 1h=+121.00% 5m=+16.00% price=$0.0002928 priceSOL=0.000002828439 liq=45.7K vol=529.5K src=dexscreener
+[2026-09-07T16:18:31.612Z]   OTC score=32 1h=+206.00% 5m=-2.51% price=$0.0002323 priceSOL=0.000002244011 liq=40.1K vol=359.1K src=dexscreener
+[2026-09-07T16:18:31.613Z]   JR2000 score=32 1h=+42.53% 5m=-31.22% price=$0.0003241 priceSOL=0.000003130796 liq=48.4K vol=711.0K src=dexscreener
+[2026-09-07T16:18:31.613Z]   NIVI score=41 1h=+68.88% 5m=+2.56% price=$0.0001261 priceSOL=0.000001218122 liq=29.9K vol=712.6K src=dexscreener
+[2026-09-07T16:18:31.613Z]   LAPTOP score=36 1h=+239.00% 5m=warming(3 samples) price=$0.0003449 priceSOL=0.000003331723 liq=50.3K vol=958.0K src=dexscreener
+[2026-09-07T16:18:31.613Z]   VC score=40 1h=+6559.00% 5m=warming(0 samples) price=$0.003196 priceSOL=0.000030873261 liq=152.3K vol=827.6K src=dexscreener
+[2026-09-07T16:18:31.613Z]   TRONK score=29 1h=-4.75% 5m=warming(3 samples) price=$0.00000485 priceSOL=0.000000046822 liq=5.1K vol=5.3M src=dexscreener
+[2026-09-07T16:18:31.613Z]   Zebrigrade score=62 1h=-40.70% 5m=warming(3 samples) price=$0.0001095 priceSOL=0.000001057767 liq=30.8K vol=424.5K src=dexscreener
+[2026-09-07T16:18:31.614Z]   TOKEN score=22 1h=+12.54% 5m=warming(3 samples) price=$0.0002396 priceSOL=0.000002314529 liq=46.2K vol=32.6K src=dexscreener
+[2026-09-07T16:18:31.614Z]   jorky score=18 1h=+32.31% 5m=warming(3 samples) price=$0.00006278 priceSOL=0.000000606453 liq=19.6K vol=44.5K src=dexscreener
+[2026-09-07T16:18:31.615Z]   LAPTOP score=48 1h=-18.23% 5m=-5.52% price=$0.00008292 priceSOL=0.000000801005 liq=24.6K vol=1.4M src=dexscreener
+[2026-09-07T16:18:31.615Z]   WUFF score=16 1h=+43.15% 5m=warming(3 samples) price=$0.00004342 priceSOL=0.000000419436 liq=17.4K vol=15.2K src=dexscreener
+[2026-09-07T16:18:31.615Z]   ALT score=58 1h=-67.76% 5m=warming(3 samples) price=$0.00001426 priceSOL=0.000000137751 liq=10.6K vol=259.2K src=dexscreener
+[2026-09-07T16:18:31.615Z]   ZCAT score=56 1h=-5.82% 5m=+3.12% price=$0.1189 priceSOL=0.001148570325 liq=1.8M vol=270.7M src=dexscreener
+[2026-09-07T16:18:31.616Z]   Nasduck score=47 1h=-8.72% 5m=-3.15% price=$0.001906 priceSOL=0.000018411901 liq=147.5K vol=14.0M src=dexscreener
+[2026-09-07T16:18:31.616Z]   STONK score=51 1h=+16.67% 5m=+3.21% price=$0.1159 priceSOL=0.001119590417 liq=2.4M vol=38.5M src=dexscreener
+[2026-09-07T16:18:31.616Z]   OTC score=40 1h=+11.24% 5m=-0.32% price=$0.0156 priceSOL=0.000150695518 liq=553.5K vol=8.0M src=dexscreener
+[2026-09-07T16:18:31.617Z]   AGI score=68 1h=+2.71% 5m=+7.59% price=$0.003092 priceSOL=0.000029868624 liq=251.3K vol=7.5M src=dexscreener
+[2026-09-07T16:18:31.617Z]   CatGPT score=55 1h=-8.20% 5m=+3.24% price=$0.000392 priceSOL=0.000003786708 liq=62.2K vol=5.1M src=dexscreener
+[2026-09-07T16:18:31.617Z]   PURR score=58 1h=-12.74% 5m=+2.03% price=$0.006178 priceSOL=0.000059679289 liq=456.1K vol=5.2M src=dexscreener
+[2026-09-07T16:18:31.617Z]   USELESS score=42 1h=+3.46% 5m=+0.66% price=$0.2282 priceSOL=0.002204404946 liq=4.7M vol=9.5M src=dexscreener
+[2026-09-07T16:18:31.617Z]   SOLCAT score=54 1h=-16.14% 5m=-3.20% price=$0.0008816 priceSOL=0.000008516229 liq=129.3K vol=1.6M src=dexscreener
+[2026-09-07T16:18:31.617Z]   CATE score=40 1h=+1.25% 5m=-0.49% price=$0.03065 priceSOL=0.000296078053 liq=1.7M vol=5.0M src=dexscreener
+[2026-09-07T16:18:31.617Z]   ANSEM score=45 1h=-5.98% 5m=-3.32% price=$0.189 priceSOL=0.001825734158 liq=2.5M vol=3.5M src=dexscreener
+[2026-09-07T16:18:31.618Z]   LOOM score=87 1h=-29.80% 5m=+5.89% price=$0.000525 priceSOL=0.000005071484 liq=110.0K vol=3.6M src=dexscreener
+[2026-09-07T16:18:31.619Z]   fone score=42 1h=-2.77% 5m=-2.84% price=$0.009293 priceSOL=0.000089770093 liq=606.0K vol=4.8M src=dexscreener
+[2026-09-07T16:18:31.619Z]   RAY score=40 1h=+0.49% 5m=+0.00% price=$1.17 priceSOL=0.011302163833 liq=5.1M vol=5.4M src=dexscreener
+[2026-09-07T16:18:31.619Z]   TROLL score=42 1h=-2.50% 5m=-0.86% price=$0.04754 priceSOL=0.000459234930 liq=3.2M vol=2.1M src=dexscreener
+[2026-09-07T16:18:31.619Z]   PUMP score=41 1h=-0.79% 5m=+0.17% price=$0.004244 priceSOL=0.000040996909 liq=22.1M vol=7.0M src=dexscreener
+[2026-09-07T16:18:31.619Z]   HIRONO score=7 1h=+8.00% 5m=warming(0 samples) price=$0.0005697 priceSOL=0.000005503284 liq=2.6K vol=188 src=dexscreener
+[2026-09-07T16:18:31.619Z]   DOG score=35 1h=-90.79% 5m=warming(0 samples) price=$0 priceSOL=0.000000000034 liq=5 vol=36 src=dexscreener
+[2026-09-07T16:18:31.620Z] [POLICY] mode=watchOnly minScore=60 maxBuys=5 regime=consolidation size=1x health=75/100 (DEGRADED)
+[2026-09-07T16:18:31.623Z] [POLICY] watchOnly mode — scanning only, no entries this window
+[2026-09-07T16:18:31.624Z] [TA] LOOM research=47 rec=HOLD consensus=mixed risk=low dataQuality=ok circuit=FILTER (mode=SHADOW)
+[2026-09-07T16:18:31.626Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:18:31.626Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:18:31.628Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:18:31.628Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:18:31.630Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:18:31.630Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:18:31.630Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:18:31.630Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:18:31.631Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:18:31.632Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:18:31.633Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:18:31.634Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:18:31.635Z] [ATLAS] LOOM research=47 rec=HOLD consensus=mixed risk=undefined dataQuality=ok V1=87 (mode=SHADOW)
+[2026-09-07T16:18:31.635Z] [ATLAS-PRED] id=P1788797911626-4JQD48 agent=technical dir=bullish conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797911626
+[2026-09-07T16:18:31.635Z] [ATLAS-PRED] id=P1788797911626-UOWPF4 agent=momentum dir=bullish conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797911626
+[2026-09-07T16:18:31.635Z] [ATLAS-PRED] id=P1788797911626-1YB9DD agent=volatility dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797911626
+[2026-09-07T16:18:31.635Z] [ATLAS-PRED] id=P1788797911626-FE4TXT agent=regime dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797911626
+[2026-09-07T16:18:31.635Z] [ATLAS-PRED] id=P1788797911626-460JDN agent=sentiment dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797911626
+[2026-09-07T16:18:31.635Z] [ATLAS-PRED] id=P1788797911626-U0YE6X agent=solana dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797911626
+[2026-09-07T16:18:31.635Z] [ATLAS-PRED] id=P1788797911626-XFTO3D agent=onchain dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797911626
+[2026-09-07T16:18:31.635Z] [ATLAS-PRED] id=P1788797911626-HYW7U9 agent=manipulation dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797911626
+[2026-09-07T16:18:31.635Z] [ATLAS-PRED] id=P1788797911626-ZGSB78 agent=technical dir=neutral conf=0 mint=E4Ap4icMLwKot8rkkTbq5JkS5kZxt5XCE3yfxbzYBjHx ts=1788797911626
+[2026-09-07T16:18:31.635Z] [ATLAS-PRED] id=P1788797911626-RJMEXL agent=momentum dir=bullish conf=0 mint=E4Ap4icMLwKot8rkkTbq5JkS5kZxt5XCE3yfxbzYBjHx ts=1788797911626
+[2026-09-07T16:18:31.635Z] [ATLAS-PRED] id=P1788797911626-A4UHLM agent=volatility dir=neutral conf=0 mint=E4Ap4icMLwKot8rkkTbq5JkS5kZxt5XCE3yfxbzYBjHx ts=1788797911626
+[2026-09-07T16:18:31.635Z] [ATLAS-PRED] id=P1788797911626-GDGM15 agent=regime dir=neutral conf=0 mint=E4Ap4icMLwKot8rkkTbq5JkS5kZxt5XCE3yfxbzYBjHx ts=1788797911626
+[2026-09-07T16:18:31.635Z] [ATLAS-PRED] id=P1788797911626-9CSNLQ agent=sentiment dir=neutral conf=0 mint=E4Ap4icMLwKot8rkkTbq5JkS5kZxt5XCE3yfxbzYBjHx ts=1788797911626
+[2026-09-07T16:18:31.635Z] [ATLAS-PRED] id=P1788797911626-JO99XD agent=solana dir=neutral conf=0 mint=E4Ap4icMLwKot8rkkTbq5JkS5kZxt5XCE3yfxbzYBjHx ts=1788797911626
+[2026-09-07T16:18:31.635Z] [ATLAS-PRED] id=P1788797911626-1QWAF9 agent=onchain dir=neutral conf=0 mint=E4Ap4icMLwKot8rkkTbq5JkS5kZxt5XCE3yfxbzYBjHx ts=1788797911626
+[2026-09-07T16:18:31.635Z] [ATLAS-PRED] id=P1788797911626-RI5KE1 agent=manipulation dir=neutral conf=0 mint=E4Ap4icMLwKot8rkkTbq5JkS5kZxt5XCE3yfxbzYBjHx ts=1788797911626
+[2026-09-07T16:18:45.342Z] [HISTORY-SKIP] 11/33 token(s) had no usable price this cycle
+[2026-09-07T16:18:45.342Z] [SAMPLER] recorded 22 price sample(s)
+[2026-09-07T16:19:00.199Z] [HISTORY-SKIP] 11/33 token(s) had no usable price this cycle
+[2026-09-07T16:19:00.199Z] [SAMPLER] recorded 22 price sample(s)
+[2026-09-07T16:19:15.626Z] [HISTORY-SKIP] 11/33 token(s) had no usable price this cycle
+[2026-09-07T16:19:15.626Z] [SAMPLER] recorded 22 price sample(s)
+[2026-09-07T16:19:30.680Z] [HISTORY-SKIP] 11/33 token(s) had no usable price this cycle
+[2026-09-07T16:19:30.680Z] [SAMPLER] recorded 22 price sample(s)
+[2026-09-07T16:19:32.257Z] [SCAN #1797] 34 real candidate(s)
+[2026-09-07T16:19:32.257Z]   BTC score=70 1h=+20.28% 5m=+7.91% price=$0.001582 priceSOL=0.000015287978 liq=167.8K vol=2.6M src=dexscreener
+[2026-09-07T16:19:32.257Z]   $HACHI score=26 1h=+0.75% 5m=+0.25% price=$0 priceSOL=0.000000000016 liq=65.7K vol=37.4K src=dexscreener
+[2026-09-07T16:19:32.257Z]   NASDIQ score=62 1h=+153.00% 5m=+35.34% price=$0.0003098 priceSOL=0.000002993815 liq=47.1K vol=537.3K src=dexscreener
+[2026-09-07T16:19:32.257Z]   OTC score=32 1h=+155.00% 5m=-18.77% price=$0.0001939 priceSOL=0.000001873792 liq=36.5K vol=362.7K src=dexscreener
+[2026-09-07T16:19:32.258Z]   JR2000 score=32 1h=+60.76% 5m=-33.02% price=$0.0003371 priceSOL=0.000003257634 liq=49.4K vol=715.4K src=dexscreener
+[2026-09-07T16:19:32.258Z]   NIVI score=32 1h=+66.69% 5m=-16.67% price=$0.0001245 priceSOL=0.000001203131 liq=29.8K vol=748.7K src=dexscreener
+[2026-09-07T16:19:32.258Z]   LAPTOP score=32 1h=+211.00% 5m=warming(3 samples) price=$0.000317 priceSOL=0.000003063394 liq=48.2K vol=996.8K src=dexscreener
+[2026-09-07T16:19:32.258Z]   VC score=40 1h=+5350.00% 5m=warming(0 samples) price=$0.002616 priceSOL=0.000025280247 liq=137.7K vol=865.2K src=dexscreener
+[2026-09-07T16:19:32.258Z]   TRONK score=25 1h=+19.12% 5m=warming(3 samples) price=$0.00000569 priceSOL=0.000000054986 liq=5.7K vol=5.3M src=dexscreener
+[2026-09-07T16:19:32.258Z]   Zebrigrade score=62 1h=-39.93% 5m=warming(3 samples) price=$0.0001093 priceSOL=0.000001056243 liq=30.8K vol=424.2K src=dexscreener
+[2026-09-07T16:19:32.258Z]   TOKEN score=22 1h=+12.46% 5m=warming(3 samples) price=$0.0002394 priceSOL=0.000002313491 liq=46.2K vol=32.6K src=dexscreener
+[2026-09-07T16:19:32.258Z]   jorky score=22 1h=+46.36% 5m=warming(3 samples) price=$0.00006944 priceSOL=0.000000671048 liq=20.8K vol=45.6K src=dexscreener
+[2026-09-07T16:19:32.258Z]   LAPTOP score=62 1h=-52.80% 5m=-2.98% price=$0.00007299 priceSOL=0.000000705354 liq=23.0K vol=1.4M src=dexscreener
+[2026-09-07T16:19:32.258Z]   STONKTRUMP score=23 1h=-1.65% 5m=warming(3 samples) price=$0.00000213 priceSOL=0.000000020535 liq=2.4K vol=1.3M src=dexscreener
+[2026-09-07T16:19:32.258Z]   WUFF score=16 1h=+39.55% 5m=warming(3 samples) price=$0.00004365 priceSOL=0.000000421821 liq=17.5K vol=15.2K src=dexscreener
+[2026-09-07T16:19:32.259Z]   ALT score=58 1h=-69.49% 5m=warming(3 samples) price=$0.0000135 priceSOL=0.000000130460 liq=10.3K vol=261.9K src=dexscreener
+[2026-09-07T16:19:32.259Z]   ZCAT score=54 1h=-6.73% 5m=+2.42% price=$0.1184 priceSOL=0.001144182451 liq=1.8M vol=270.7M src=dexscreener
+[2026-09-07T16:19:32.259Z]   Nasduck score=77 1h=-8.28% 5m=+8.11% price=$0.001932 priceSOL=0.000018670274 liq=148.6K vol=14.0M src=dexscreener
+[2026-09-07T16:19:32.259Z]   STONK score=52 1h=+18.84% 5m=+3.23% price=$0.1182 priceSOL=0.001142249710 liq=2.4M vol=38.5M src=dexscreener
+[2026-09-07T16:19:32.259Z]   OTC score=43 1h=+18.55% 5m=+0.96% price=$0.01574 priceSOL=0.000152106687 liq=556.0K vol=8.0M src=dexscreener
+[2026-09-07T16:19:32.259Z]   AGI score=70 1h=+9.36% 5m=+18.21% price=$0.003278 priceSOL=0.000031677619 liq=259.0K vol=7.5M src=dexscreener
+[2026-09-07T16:19:32.259Z]   CatGPT score=66 1h=+2.36% 5m=+10.04% price=$0.000411 priceSOL=0.000003971782 liq=63.8K vol=5.1M src=dexscreener
+[2026-09-07T16:19:32.259Z]   PURR score=58 1h=-12.80% 5m=+1.97% price=$0.006174 priceSOL=0.000059663703 liq=455.9K vol=5.2M src=dexscreener
+[2026-09-07T16:19:32.259Z]   USELESS score=44 1h=+1.86% 5m=+1.19% price=$0.2297 priceSOL=0.002219752609 liq=4.7M vol=9.5M src=dexscreener
+[2026-09-07T16:19:32.259Z]   SOLCAT score=55 1h=-17.47% 5m=-2.74% price=$0.0008849 priceSOL=0.000008551411 liq=129.5K vol=1.6M src=dexscreener
+[2026-09-07T16:19:32.259Z]   CATE score=40 1h=+0.32% 5m=-1.68% price=$0.03047 priceSOL=0.000294453034 liq=1.7M vol=5.0M src=dexscreener
+[2026-09-07T16:19:32.260Z]   ANSEM score=45 1h=-5.94% 5m=-3.54% price=$0.1882 priceSOL=0.001818708929 liq=2.5M vol=3.5M src=dexscreener
+[2026-09-07T16:19:32.260Z]   LOOM score=85 1h=-17.45% 5m=+23.74% price=$0.0006135 priceSOL=0.000005928682 liq=119.4K vol=3.6M src=dexscreener
+[2026-09-07T16:19:32.260Z]   fone score=42 1h=-2.56% 5m=-3.27% price=$0.009258 priceSOL=0.000089466564 liq=604.9K vol=4.8M src=dexscreener
+[2026-09-07T16:19:32.261Z]   RAY score=40 1h=-0.01% 5m=+0.00% price=$1.17 priceSOL=0.011306532663 liq=5.1M vol=5.4M src=dexscreener
+[2026-09-07T16:19:32.261Z]   TROLL score=42 1h=-2.59% 5m=-0.48% price=$0.04755 priceSOL=0.000459509084 liq=3.2M vol=2.1M src=dexscreener
+[2026-09-07T16:19:32.261Z]   PUMP score=41 1h=-1.42% 5m=+0.02% price=$0.004244 priceSOL=0.000041012756 liq=22.1M vol=7.0M src=dexscreener
+[2026-09-07T16:19:32.261Z]   OpenAI score=17 1h=+33.35% 5m=warming(0 samples) price=$0.0001037 priceSOL=0.000001002126 liq=35.9K vol=4.1K src=dexscreener
+[2026-09-07T16:19:32.261Z]   HIRONO score=8 1h=-1.11% 5m=warming(0 samples) price=$0.0005216 priceSOL=0.000005040588 liq=2.5K vol=333 src=dexscreener
+[2026-09-07T16:19:32.261Z] [POLICY] mode=watchOnly minScore=60 maxBuys=5 regime=consolidation size=1x health=75/100 (DEGRADED)
+[2026-09-07T16:19:32.264Z] [POLICY] watchOnly mode — scanning only, no entries this window
+[2026-09-07T16:19:32.265Z] [TA] LOOM research=49 rec=HOLD consensus=mixed risk=low dataQuality=ok circuit=FILTER (mode=SHADOW)
+[2026-09-07T16:19:32.268Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:19:32.268Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:19:32.268Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:19:32.268Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:19:32.270Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:19:32.270Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:19:32.270Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:19:32.270Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:19:32.272Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:19:32.272Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:19:32.272Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:19:32.272Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:19:32.272Z] [ATLAS] LOOM research=37 rec=HOLD consensus=mixed risk=undefined dataQuality=ok V1=85 (mode=SHADOW)
+[2026-09-07T16:19:32.272Z] [ATLAS-PRED] id=P1788797972267-0FRQM1 agent=technical dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797972267
+[2026-09-07T16:19:32.272Z] [ATLAS-PRED] id=P1788797972267-PPIYCZ agent=momentum dir=bullish conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797972267
+[2026-09-07T16:19:32.272Z] [ATLAS-PRED] id=P1788797972267-JVPIM6 agent=volatility dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797972267
+[2026-09-07T16:19:32.272Z] [ATLAS-PRED] id=P1788797972267-RBIYN6 agent=regime dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797972267
+[2026-09-07T16:19:32.272Z] [ATLAS-PRED] id=P1788797972267-8CWYQX agent=sentiment dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797972267
+[2026-09-07T16:19:32.272Z] [ATLAS-PRED] id=P1788797972267-1ZN342 agent=solana dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797972267
+[2026-09-07T16:19:32.272Z] [ATLAS-PRED] id=P1788797972267-J4LPHY agent=onchain dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797972267
+[2026-09-07T16:19:32.272Z] [ATLAS-PRED] id=P1788797972267-PD05EJ agent=manipulation dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788797972267
+[2026-09-07T16:19:32.272Z] [ATLAS-PRED] id=P1788797972267-T0JVN2 agent=technical dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788797972267
+[2026-09-07T16:19:32.272Z] [ATLAS-PRED] id=P1788797972267-WUUC3Y agent=momentum dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788797972267
+[2026-09-07T16:19:32.272Z] [ATLAS-PRED] id=P1788797972267-U1TKPV agent=volatility dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788797972267
+[2026-09-07T16:19:32.272Z] [ATLAS-PRED] id=P1788797972267-HC299K agent=regime dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788797972267
+[2026-09-07T16:19:32.272Z] [ATLAS-PRED] id=P1788797972267-M98I87 agent=sentiment dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788797972267
+[2026-09-07T16:19:32.273Z] [ATLAS-PRED] id=P1788797972267-OWU4EB agent=solana dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788797972267
+[2026-09-07T16:19:32.273Z] [ATLAS-PRED] id=P1788797972267-89XZ4O agent=onchain dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788797972267
+[2026-09-07T16:19:32.273Z] [ATLAS-PRED] id=P1788797972267-V94LWC agent=manipulation dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788797972267
+[2026-09-07T16:19:45.382Z] [HISTORY-SKIP] 12/34 token(s) had no usable price this cycle
+[2026-09-07T16:19:45.382Z] [SAMPLER] recorded 22 price sample(s)
+[2026-09-07T16:19:59.931Z] [HISTORY-SKIP] 12/34 token(s) had no usable price this cycle
+[2026-09-07T16:19:59.932Z] [SAMPLER] recorded 22 price sample(s)
+[2026-09-07T16:20:14.886Z] [HISTORY-SKIP] 12/34 token(s) had no usable price this cycle
+[2026-09-07T16:20:14.886Z] [SAMPLER] recorded 22 price sample(s)
+[2026-09-07T16:20:30.928Z] [HISTORY-SKIP] 12/34 token(s) had no usable price this cycle
+[2026-09-07T16:20:30.928Z] [SAMPLER] recorded 22 price sample(s)
+[2026-09-07T16:20:31.871Z] [SCAN #1798] 33 real candidate(s)
+[2026-09-07T16:20:31.872Z]   BTC score=53 1h=+17.06% 5m=+3.63% price=$0.001543 priceSOL=0.000014892385 liq=165.7K vol=2.6M src=dexscreener
+[2026-09-07T16:20:31.872Z]   $HACHI score=28 1h=+1.26% 5m=+0.75% price=$0 priceSOL=0.000000000016 liq=65.9K vol=37.4K src=dexscreener
+[2026-09-07T16:20:31.872Z]   NASDIQ score=66 1h=+178.00% 5m=+44.62% price=$0.0003711 priceSOL=0.000003581701 liq=51.7K vol=547.8K src=dexscreener
+[2026-09-07T16:20:31.872Z]   OTC score=32 1h=+180.00% 5m=-12.09% price=$0.0002124 priceSOL=0.000002049995 liq=38.3K vol=365.2K src=dexscreener
+[2026-09-07T16:20:31.872Z]   JR2000 score=36 1h=+62.08% 5m=-21.44% price=$0.0003613 priceSOL=0.000003487115 liq=51.2K vol=718.5K src=dexscreener
+[2026-09-07T16:20:31.872Z]   NIVI score=32 1h=+78.88% 5m=+0.07% price=$0.0001336 priceSOL=0.000001289451 liq=30.9K vol=774.9K src=dexscreener
+[2026-09-07T16:20:31.873Z]   LAPTOP score=32 1h=+211.00% 5m=warming(3 samples) price=$0.0003169 priceSOL=0.000003058585 liq=48.3K vol=1.0M src=dexscreener
+[2026-09-07T16:20:31.873Z]   VC score=40 1h=+3977.00% 5m=warming(0 samples) price=$0.001957 priceSOL=0.000018888138 liq=119.1K vol=965.2K src=dexscreener
+[2026-09-07T16:20:31.873Z]   TRONK score=25 1h=+19.13% 5m=warming(3 samples) price=$0.00000569 priceSOL=0.000000054917 liq=5.7K vol=5.3M src=dexscreener
+[2026-09-07T16:20:31.873Z]   Zebrigrade score=62 1h=-42.31% 5m=warming(3 samples) price=$0.0001049 priceSOL=0.000001012451 liq=30.3K vol=423.8K src=dexscreener
+[2026-09-07T16:20:31.873Z]   TOKEN score=22 1h=+12.39% 5m=warming(3 samples) price=$0.0002392 priceSOL=0.000002308657 liq=46.2K vol=32.6K src=dexscreener
+[2026-09-07T16:20:31.873Z]   jorky score=18 1h=+36.24% 5m=warming(3 samples) price=$0.00006464 priceSOL=0.000000623878 liq=20.0K vol=46.2K src=dexscreener
+[2026-09-07T16:20:31.873Z]   LAPTOP score=67 1h=-86.41% 5m=+2.62% price=$0.00002523 priceSOL=0.000000243509 liq=12.8K vol=1.4M src=dexscreener
+[2026-09-07T16:20:31.873Z]   STONKTRUMP score=23 1h=-1.65% 5m=warming(3 samples) price=$0.00000213 priceSOL=0.000000020510 liq=2.4K vol=1.3M src=dexscreener
+[2026-09-07T16:20:31.874Z]   WUFF score=16 1h=+36.72% 5m=warming(3 samples) price=$0.0000436 priceSOL=0.000000420809 liq=17.5K vol=15.3K src=dexscreener
+[2026-09-07T16:20:31.874Z]   ZCAT score=52 1h=-8.18% 5m=+1.47% price=$0.1173 priceSOL=0.001132130103 liq=1.8M vol=270.7M src=dexscreener
+[2026-09-07T16:20:31.874Z]   Nasduck score=70 1h=+9.10% 5m=+18.97% price=$0.002176 priceSOL=0.000021001834 liq=157.8K vol=14.0M src=dexscreener
+[2026-09-07T16:20:31.874Z]   STONK score=43 1h=+15.68% 5m=+1.04% price=$0.1166 priceSOL=0.001125373999 liq=2.4M vol=38.5M src=dexscreener
+[2026-09-07T16:20:31.874Z]   OTC score=58 1h=+18.42% 5m=+4.79% price=$0.0162 priceSOL=0.000156355564 liq=564.1K vol=8.0M src=dexscreener
+[2026-09-07T16:20:31.874Z]   AGI score=70 1h=+9.52% 5m=+19.78% price=$0.0033 priceSOL=0.000031850208 liq=259.9K vol=7.5M src=dexscreener
+[2026-09-07T16:20:31.874Z]   CatGPT score=68 1h=-1.81% 5m=+9.05% price=$0.0004038 priceSOL=0.000003897307 liq=63.2K vol=5.1M src=dexscreener
+[2026-09-07T16:20:31.874Z]   PURR score=56 1h=-12.23% 5m=+1.64% price=$0.006188 priceSOL=0.000059723965 liq=456.4K vol=5.2M src=dexscreener
+[2026-09-07T16:20:31.874Z]   USELESS score=40 1h=+1.58% 5m=+0.13% price=$0.2303 priceSOL=0.002222758421 liq=4.7M vol=9.5M src=dexscreener
+[2026-09-07T16:20:31.875Z]   SOLCAT score=54 1h=-16.08% 5m=-2.01% price=$0.0008921 priceSOL=0.000008610173 liq=130.1K vol=1.6M src=dexscreener
+[2026-09-07T16:20:31.875Z]   CATE score=40 1h=+0.80% 5m=-1.07% price=$0.03047 priceSOL=0.000294083583 liq=1.7M vol=5.0M src=dexscreener
+[2026-09-07T16:20:31.876Z]   ANSEM score=45 1h=-5.60% 5m=-3.37% price=$0.189 priceSOL=0.001824148248 liq=2.5M vol=3.6M src=dexscreener
+[2026-09-07T16:20:31.876Z]   LOOM score=70 1h=+3.09% 5m=+43.29% price=$0.000713 priceSOL=0.000006881575 liq=129.3K vol=3.6M src=dexscreener
+[2026-09-07T16:20:31.877Z]   fone score=42 1h=-1.83% 5m=-2.21% price=$0.009366 priceSOL=0.000090396680 liq=608.4K vol=4.8M src=dexscreener
+[2026-09-07T16:20:31.877Z]   RAY score=40 1h=+0.10% 5m=+0.00% price=$1.17 priceSOL=0.011292346299 liq=5.1M vol=5.4M src=dexscreener
+[2026-09-07T16:20:31.877Z]   TROLL score=42 1h=-2.13% 5m=-0.34% price=$0.04756 priceSOL=0.000459029051 liq=3.2M vol=2.1M src=dexscreener
+[2026-09-07T16:20:31.877Z]   PUMP score=42 1h=-2.15% 5m=-0.52% price=$0.004221 priceSOL=0.000040739311 liq=22.0M vol=7.0M src=dexscreener
+[2026-09-07T16:20:31.877Z]   OpenAI score=17 1h=+44.00% 5m=warming(0 samples) price=$0.000112 priceSOL=0.000001080977 liq=37.3K vol=5.6K src=dexscreener
+[2026-09-07T16:20:31.877Z]   HIRONO score=7 1h=+4.96% 5m=warming(0 samples) price=$0.0005537 priceSOL=0.000005344079 liq=2.6K vol=452 src=dexscreener
+[2026-09-07T16:20:31.878Z] [POLICY] mode=watchOnly minScore=60 maxBuys=5 regime=consolidation size=1x health=75/100 (DEGRADED)
+[2026-09-07T16:20:31.882Z] [POLICY] watchOnly mode — scanning only, no entries this window
+[2026-09-07T16:20:31.883Z] [TA] LAPTOP research=42 rec=AVOID consensus=mixed risk=medium dataQuality=ok circuit=FILTER (mode=SHADOW)
+[2026-09-07T16:20:31.888Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:20:31.888Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:20:31.888Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:20:31.888Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:20:31.890Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:20:31.890Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:20:31.890Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:20:31.890Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:20:31.891Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:20:31.891Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:20:31.891Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:20:31.891Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:20:31.892Z] [ATLAS] LOOM research=49 rec=HOLD consensus=mixed risk=undefined dataQuality=ok V1=70 (mode=SHADOW)
+[2026-09-07T16:20:31.892Z] [ATLAS-PRED] id=P1788798031887-N5JK2B agent=technical dir=bullish conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798031887
+[2026-09-07T16:20:31.892Z] [ATLAS-PRED] id=P1788798031887-945TJ1 agent=momentum dir=bullish conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798031887
+[2026-09-07T16:20:31.892Z] [ATLAS-PRED] id=P1788798031887-VFPJ3J agent=volatility dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798031887
+[2026-09-07T16:20:31.892Z] [ATLAS-PRED] id=P1788798031887-FGT83H agent=regime dir=bullish conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798031887
+[2026-09-07T16:20:31.892Z] [ATLAS-PRED] id=P1788798031887-FGKS50 agent=sentiment dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798031887
+[2026-09-07T16:20:31.892Z] [ATLAS-PRED] id=P1788798031887-E5JN3G agent=solana dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798031887
+[2026-09-07T16:20:31.892Z] [ATLAS-PRED] id=P1788798031887-SUKXH6 agent=onchain dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798031887
+[2026-09-07T16:20:31.892Z] [ATLAS-PRED] id=P1788798031887-CBB6SQ agent=manipulation dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798031887
+[2026-09-07T16:20:31.892Z] [ATLAS-PRED] id=P1788798031887-W0MDWX agent=technical dir=bullish conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798031887
+[2026-09-07T16:20:31.892Z] [ATLAS-PRED] id=P1788798031887-CF1KUA agent=momentum dir=bullish conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798031887
+[2026-09-07T16:20:31.892Z] [ATLAS-PRED] id=P1788798031887-Z876M4 agent=volatility dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798031887
+[2026-09-07T16:20:31.892Z] [ATLAS-PRED] id=P1788798031887-N0JZBN agent=regime dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798031887
+[2026-09-07T16:20:31.892Z] [ATLAS-PRED] id=P1788798031887-CKNCG6 agent=sentiment dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798031887
+[2026-09-07T16:20:31.892Z] [ATLAS-PRED] id=P1788798031887-5NJ4VE agent=solana dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798031887
+[2026-09-07T16:20:31.892Z] [ATLAS-PRED] id=P1788798031887-5HHSR0 agent=onchain dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798031887
+[2026-09-07T16:20:31.892Z] [ATLAS-PRED] id=P1788798031887-J6999V agent=manipulation dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798031887
+[2026-09-07T16:20:46.617Z] [HISTORY-SKIP] 11/33 token(s) had no usable price this cycle
+[2026-09-07T16:20:46.617Z] [SAMPLER] recorded 22 price sample(s)
+[2026-09-07T16:21:00.138Z] [HISTORY-SKIP] 11/33 token(s) had no usable price this cycle
+[2026-09-07T16:21:00.138Z] [SAMPLER] recorded 22 price sample(s)
+[2026-09-07T16:21:14.883Z] [HISTORY-SKIP] 11/33 token(s) had no usable price this cycle
+[2026-09-07T16:21:14.883Z] [SAMPLER] recorded 22 price sample(s)
+[2026-09-07T16:21:30.632Z] [HISTORY-SKIP] 11/33 token(s) had no usable price this cycle
+[2026-09-07T16:21:30.632Z] [SAMPLER] recorded 22 price sample(s)
+[2026-09-07T16:21:37.006Z] [SCAN #1799] 34 real candidate(s)
+[2026-09-07T16:21:37.006Z]   BTC score=47 1h=+25.38% 5m=+2.11% price=$0.001552 priceSOL=0.000014990824 liq=166.2K vol=2.6M src=dexscreener
+[2026-09-07T16:21:37.006Z]   $HACHI score=29 1h=+0.82% 5m=+0.94% price=$0 priceSOL=0.000000000016 liq=65.8K vol=37.4K src=dexscreener
+[2026-09-07T16:21:37.006Z]   NASDIQ score=62 1h=+129.00% 5m=+18.52% price=$0.0003288 priceSOL=0.000003175891 liq=48.6K vol=556.0K src=dexscreener
+[2026-09-07T16:21:37.006Z]   OTC score=32 1h=+173.00% 5m=-13.42% price=$0.0002075 priceSOL=0.000002004250 liq=37.9K vol=366.5K src=dexscreener
+[2026-09-07T16:21:37.007Z]   JR2000 score=32 1h=+33.15% 5m=-15.42% price=$0.000299 priceSOL=0.000002888052 liq=46.5K vol=723.6K src=dexscreener
+[2026-09-07T16:21:37.007Z]   NIVI score=32 1h=+39.86% 5m=-12.11% price=$0.0001044 priceSOL=0.000001008403 liq=27.2K vol=806.2K src=dexscreener
+[2026-09-07T16:21:37.007Z]   LAPTOP score=36 1h=+266.00% 5m=warming(3 samples) price=$0.0003733 priceSOL=0.000003605718 liq=52.6K vol=1.1M src=dexscreener
+[2026-09-07T16:21:37.007Z]   VC score=40 1h=+4376.00% 5m=warming(0 samples) price=$0.002148 priceSOL=0.000020747609 liq=124.9K vol=993.7K src=dexscreener
+[2026-09-07T16:21:37.007Z]   TRONK score=25 1h=+19.13% 5m=warming(3 samples) price=$0.00000569 priceSOL=0.000000054960 liq=5.7K vol=5.3M src=dexscreener
+[2026-09-07T16:21:37.007Z]   Zebrigrade score=62 1h=-42.36% 5m=warming(3 samples) price=$0.0001048 priceSOL=0.000001012267 liq=30.2K vol=423.8K src=dexscreener
+[2026-09-07T16:21:37.007Z]   TOKEN score=22 1h=+12.30% 5m=warming(3 samples) price=$0.0002391 priceSOL=0.000002309476 liq=46.2K vol=32.6K src=dexscreener
+[2026-09-07T16:21:37.007Z]   jorky score=18 1h=+35.05% 5m=warming(3 samples) price=$0.00006407 priceSOL=0.000000618854 liq=19.9K vol=46.6K src=dexscreener
+[2026-09-07T16:21:37.007Z]   LAPTOP score=58 1h=-80.46% 5m=+0.00% price=$0.0000349 priceSOL=0.000000337100 liq=15.4K vol=1.4M src=dexscreener
+[2026-09-07T16:21:37.007Z]   STONKTRUMP score=23 1h=-1.65% 5m=warming(3 samples) price=$0.00000213 priceSOL=0.000000020525 liq=2.4K vol=1.3M src=dexscreener
+[2026-09-07T16:21:37.007Z]   WUFF score=16 1h=+36.85% 5m=warming(3 samples) price=$0.00004356 priceSOL=0.000000420748 liq=17.5K vol=15.3K src=dexscreener
+[2026-09-07T16:21:37.007Z]   ALT score=58 1h=-70.12% 5m=warming(3 samples) price=$0.00001322 priceSOL=0.000000127692 liq=10.1K vol=262.9K src=dexscreener
+[2026-09-07T16:21:37.007Z]   ZCAT score=55 1h=-7.69% 5m=+2.35% price=$0.1176 priceSOL=0.001135902637 liq=1.8M vol=270.7M src=dexscreener
+[2026-09-07T16:21:37.008Z]   Nasduck score=70 1h=+7.37% 5m=+16.66% price=$0.002164 priceSOL=0.000020902154 liq=157.3K vol=14.0M src=dexscreener
+[2026-09-07T16:21:37.008Z]   STONK score=52 1h=+16.85% 5m=+3.30% price=$0.1189 priceSOL=0.001148459384 liq=2.4M vol=38.5M src=dexscreener
+[2026-09-07T16:21:37.008Z]   OTC score=51 1h=+18.40% 5m=+3.08% price=$0.01641 priceSOL=0.000158504781 liq=567.8K vol=8.0M src=dexscreener
+[2026-09-07T16:21:37.008Z]   AGI score=70 1h=+1.98% 5m=+20.47% price=$0.003248 priceSOL=0.000031372549 liq=257.9K vol=7.5M src=dexscreener
+[2026-09-07T16:21:37.008Z]   CatGPT score=66 1h=+0.67% 5m=+12.23% price=$0.0004112 priceSOL=0.000003971796 liq=63.8K vol=5.1M src=dexscreener
+[2026-09-07T16:21:37.008Z]   PURR score=57 1h=-10.76% 5m=+2.34% price=$0.006216 priceSOL=0.000060040568 liq=457.0K vol=5.2M src=dexscreener
+[2026-09-07T16:21:37.008Z]   USELESS score=40 1h=+0.40% 5m=+0.13% price=$0.2302 priceSOL=0.002223510094 liq=4.7M vol=9.5M src=dexscreener
+[2026-09-07T16:21:37.008Z]   SOLCAT score=53 1h=-14.83% 5m=-0.88% price=$0.0009031 priceSOL=0.000008723075 liq=130.9K vol=1.6M src=dexscreener
+[2026-09-07T16:21:37.008Z]   CATE score=40 1h=+0.75% 5m=-0.65% price=$0.03061 priceSOL=0.000295663093 liq=1.7M vol=5.0M src=dexscreener
+[2026-09-07T16:21:37.008Z]   ANSEM score=44 1h=-4.53% 5m=-4.07% price=$0.1884 priceSOL=0.001819762388 liq=2.5M vol=3.6M src=dexscreener
+[2026-09-07T16:21:37.008Z]   LOOM score=70 1h=+23.89% 5m=+42.66% price=$0.0007116 priceSOL=0.000006873370 liq=129.1K vol=3.6M src=dexscreener
+[2026-09-07T16:21:37.008Z]   fone score=41 1h=-1.59% 5m=-1.82% price=$0.009387 priceSOL=0.000090669371 liq=609.1K vol=4.8M src=dexscreener
+[2026-09-07T16:21:37.008Z]   RAY score=40 1h=+0.84% 5m=+0.00% price=$1.17 priceSOL=0.011301072153 liq=5.1M vol=5.4M src=dexscreener
+[2026-09-07T16:21:37.009Z]   TROLL score=43 1h=-3.05% 5m=-1.27% price=$0.04733 priceSOL=0.000457162175 liq=3.2M vol=2.1M src=dexscreener
+[2026-09-07T16:21:37.009Z]   PUMP score=42 1h=-2.16% 5m=-0.54% price=$0.004221 priceSOL=0.000040770791 liq=22.0M vol=7.0M src=dexscreener
+[2026-09-07T16:21:37.009Z]   HIRONO score=14 1h=-7.96% 5m=warming(0 samples) price=$0.0004855 priceSOL=0.000004689462 liq=2.4K vol=620 src=dexscreener
+[2026-09-07T16:21:37.009Z]   OpenAI score=5 1h=+4056.00% 5m=warming(0 samples) price=$0.0001024 priceSOL=0.000000989085 liq=0 vol=1 src=dexscreener
+[2026-09-07T16:21:37.009Z] [POLICY] mode=watchOnly minScore=60 maxBuys=5 regime=consolidation size=1x health=75/100 (DEGRADED)
+[2026-09-07T16:21:37.012Z] [POLICY] watchOnly mode — scanning only, no entries this window
+[2026-09-07T16:21:37.013Z] [TA] LOOM research=49 rec=HOLD consensus=mixed risk=low dataQuality=ok circuit=FILTER (mode=SHADOW)
+[2026-09-07T16:21:37.015Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:21:37.015Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:21:37.015Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:21:37.015Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:21:37.017Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:21:37.017Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:21:37.017Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:21:37.017Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:21:37.018Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:21:37.018Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:21:37.018Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:21:37.018Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:21:37.018Z] [ATLAS] LOOM research=38 rec=HOLD consensus=mixed risk=undefined dataQuality=ok V1=70 (mode=SHADOW)
+[2026-09-07T16:21:37.018Z] [ATLAS-PRED] id=P1788798097014-QMHV2P agent=technical dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798097014
+[2026-09-07T16:21:37.018Z] [ATLAS-PRED] id=P1788798097014-2V7NAL agent=momentum dir=bearish conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798097014
+[2026-09-07T16:21:37.018Z] [ATLAS-PRED] id=P1788798097014-WZWIG0 agent=volatility dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798097014
+[2026-09-07T16:21:37.018Z] [ATLAS-PRED] id=P1788798097014-5A4JOM agent=regime dir=bullish conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798097014
+[2026-09-07T16:21:37.019Z] [ATLAS-PRED] id=P1788798097014-JR382L agent=sentiment dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798097014
+[2026-09-07T16:21:37.019Z] [ATLAS-PRED] id=P1788798097014-BZQD2M agent=solana dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798097014
+[2026-09-07T16:21:37.019Z] [ATLAS-PRED] id=P1788798097014-SV6RTR agent=onchain dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798097014
+[2026-09-07T16:21:37.019Z] [ATLAS-PRED] id=P1788798097014-YETUIL agent=manipulation dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798097014
+[2026-09-07T16:21:37.019Z] [ATLAS-PRED] id=P1788798097014-406P6U agent=technical dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798097014
+[2026-09-07T16:21:37.019Z] [ATLAS-PRED] id=P1788798097014-DKSKZN agent=momentum dir=bearish conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798097014
+[2026-09-07T16:21:37.019Z] [ATLAS-PRED] id=P1788798097014-OCENMS agent=volatility dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798097014
+[2026-09-07T16:21:37.019Z] [ATLAS-PRED] id=P1788798097014-G38PUE agent=regime dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798097014
+[2026-09-07T16:21:37.019Z] [ATLAS-PRED] id=P1788798097014-259QPL agent=sentiment dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798097014
+[2026-09-07T16:21:37.019Z] [ATLAS-PRED] id=P1788798097014-7GD8XR agent=solana dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798097014
+[2026-09-07T16:21:37.019Z] [ATLAS-PRED] id=P1788798097014-ENFKTS agent=onchain dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798097014
+[2026-09-07T16:21:37.019Z] [ATLAS-PRED] id=P1788798097014-L96TNN agent=manipulation dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798097014
+[2026-09-07T16:21:45.417Z] [HISTORY-SKIP] 11/34 token(s) had no usable price this cycle
+[2026-09-07T16:21:45.417Z] [SAMPLER] recorded 23 price sample(s)
+[2026-09-07T16:22:00.553Z] [HISTORY-SKIP] 11/34 token(s) had no usable price this cycle
+[2026-09-07T16:22:00.554Z] [SAMPLER] recorded 23 price sample(s)
+[2026-09-07T16:22:17.387Z] [HISTORY-SKIP] 11/34 token(s) had no usable price this cycle
+[2026-09-07T16:22:17.387Z] [SAMPLER] recorded 23 price sample(s)
+[2026-09-07T16:22:30.157Z] [HISTORY-SKIP] 11/34 token(s) had no usable price this cycle
+[2026-09-07T16:22:30.157Z] [SAMPLER] recorded 23 price sample(s)
+[2026-09-07T16:22:31.675Z] [SCAN #1800] 34 real candidate(s)
+[2026-09-07T16:22:31.676Z]   BTC score=51 1h=+31.84% 5m=+3.09% price=$0.001569 priceSOL=0.000015140403 liq=167.1K vol=2.6M src=dexscreener
+[2026-09-07T16:22:31.676Z]   $HACHI score=29 1h=+0.87% 5m=+0.94% price=$0 priceSOL=0.000000000016 liq=65.8K vol=37.4K src=dexscreener
+[2026-09-07T16:22:31.676Z]   NASDIQ score=62 1h=+86.12% 5m=+9.81% price=$0.0002676 priceSOL=0.000002582264 liq=43.6K vol=562.3K src=dexscreener
+[2026-09-07T16:22:31.676Z]   OTC score=32 1h=+175.00% 5m=-8.69% price=$0.0002091 priceSOL=0.000002017755 liq=38.0K vol=367.7K src=dexscreener
+[2026-09-07T16:22:31.676Z]   JR2000 score=66 1h=+62.65% 5m=+11.99% price=$0.0003653 priceSOL=0.000003525041 liq=51.6K vol=729.0K src=dexscreener
+[2026-09-07T16:22:31.676Z]   NIVI score=49 1h=+56.84% 5m=+4.55% price=$0.0001171 priceSOL=0.000001129982 liq=29.0K vol=830.5K src=dexscreener
+[2026-09-07T16:22:31.676Z]   LAPTOP score=36 1h=+288.00% 5m=warming(7 samples) price=$0.0003954 priceSOL=0.000003815497 liq=54.3K vol=1.1M src=dexscreener
+[2026-09-07T16:22:31.676Z]   VC score=40 1h=+4247.00% 5m=warming(0 samples) price=$0.002086 priceSOL=0.000020129306 liq=123.1K vol=1.0M src=dexscreener
+[2026-09-07T16:22:31.677Z]   TRONK score=25 1h=+19.13% 5m=warming(3 samples) price=$0.00000569 priceSOL=0.000000054907 liq=5.7K vol=5.3M src=dexscreener
+[2026-09-07T16:22:31.677Z]   NFW score=67 1h=-67.93% 5m=warming(0 samples) price=$0.005831 priceSOL=0.000056267490 liq=201.7K vol=128.9K src=dexscreener
+[2026-09-07T16:22:31.677Z]   TOKEN score=22 1h=+12.30% 5m=warming(3 samples) price=$0.0002391 priceSOL=0.000002307247 liq=46.2K vol=32.6K src=dexscreener
+[2026-09-07T16:22:31.677Z]   jorky score=18 1h=+26.74% 5m=warming(3 samples) price=$0.00006013 priceSOL=0.000000580237 liq=19.2K vol=47.2K src=dexscreener
+[2026-09-07T16:22:31.677Z]   LAPTOP score=58 1h=-79.39% 5m=warming(15 samples) price=$0.00003681 priceSOL=0.000000355206 liq=15.8K vol=1.4M src=dexscreener
+[2026-09-07T16:22:31.677Z]   STONKTRUMP score=23 1h=-1.65% 5m=warming(3 samples) price=$0.00000213 priceSOL=0.000000020506 liq=2.4K vol=1.3M src=dexscreener
+[2026-09-07T16:22:31.677Z]   WUFF score=16 1h=+30.27% 5m=warming(3 samples) price=$0.00004175 priceSOL=0.000000402876 liq=17.1K vol=15.4K src=dexscreener
+[2026-09-07T16:22:31.677Z]   ALT score=58 1h=-58.30% 5m=warming(3 samples) price=$0.00001845 priceSOL=0.000000178037 liq=12.0K vol=264.0K src=dexscreener
+[2026-09-07T16:22:31.677Z]   ZCAT score=59 1h=-6.16% 5m=+3.92% price=$0.1192 priceSOL=0.001150246068 liq=1.8M vol=270.7M src=dexscreener
+[2026-09-07T16:22:31.677Z]   Nasduck score=70 1h=+21.62% 5m=+28.24% price=$0.002236 priceSOL=0.000021576763 liq=160.0K vol=14.0M src=dexscreener
+[2026-09-07T16:22:31.677Z]   STONK score=51 1h=+16.99% 5m=+3.03% price=$0.1189 priceSOL=0.001147351153 liq=2.4M vol=38.5M src=dexscreener
+[2026-09-07T16:22:31.678Z]   OTC score=70 1h=+23.81% 5m=+8.51% price=$0.01707 priceSOL=0.000164720641 liq=579.3K vol=8.1M src=dexscreener
+[2026-09-07T16:22:31.678Z]   AGI score=70 1h=+0.75% 5m=+18.21% price=$0.003174 priceSOL=0.000030628196 liq=254.4K vol=7.5M src=dexscreener
+[2026-09-07T16:22:31.678Z]   CatGPT score=66 1h=+8.89% 5m=+11.46% price=$0.0004295 priceSOL=0.000004144553 liq=65.2K vol=5.1M src=dexscreener
+[2026-09-07T16:22:31.678Z]   PURR score=58 1h=-7.16% 5m=+3.35% price=$0.006292 priceSOL=0.000060716009 liq=459.8K vol=5.2M src=dexscreener
+[2026-09-07T16:22:31.678Z]   USELESS score=40 1h=-0.04% 5m=+0.17% price=$0.2294 priceSOL=0.002213644697 liq=4.7M vol=9.5M src=dexscreener
+[2026-09-07T16:22:31.678Z]   SOLCAT score=54 1h=-16.51% 5m=-3.26% price=$0.0008861 priceSOL=0.000008550613 liq=129.6K vol=1.6M src=dexscreener
+[2026-09-07T16:22:31.678Z]   CATE score=40 1h=+1.61% 5m=-0.94% price=$0.03042 priceSOL=0.000293544340 liq=1.7M vol=5.0M src=dexscreener
+[2026-09-07T16:22:31.678Z]   ANSEM score=44 1h=-4.76% 5m=-1.71% price=$0.1893 priceSOL=0.001826691113 liq=2.5M vol=3.6M src=dexscreener
+[2026-09-07T16:22:31.679Z]   LOOM score=70 1h=+24.11% 5m=+33.86% price=$0.0006657 priceSOL=0.000006423815 liq=124.8K vol=3.6M src=dexscreener
+[2026-09-07T16:22:31.679Z]   fone score=47 1h=+0.87% 5m=+2.04% price=$0.009687 priceSOL=0.000093476792 liq=618.8K vol=4.8M src=dexscreener
+[2026-09-07T16:22:31.679Z]   RAY score=40 1h=+0.18% 5m=+0.00% price=$1.17 priceSOL=0.011290166940 liq=5.1M vol=5.4M src=dexscreener
+[2026-09-07T16:22:31.679Z]   TROLL score=42 1h=-2.70% 5m=-0.88% price=$0.0473 priceSOL=0.000456431535 liq=3.2M vol=2.1M src=dexscreener
+[2026-09-07T16:22:31.679Z]   PUMP score=42 1h=-2.51% 5m=-0.85% price=$0.004206 priceSOL=0.000040586703 liq=22.0M vol=7.1M src=dexscreener
+[2026-09-07T16:22:31.679Z]   HIRONO score=8 1h=-0.60% 5m=warming(0 samples) price=$0.0005243 priceSOL=0.000005059346 liq=2.5K vol=743 src=dexscreener
+[2026-09-07T16:22:31.679Z]   OpenAI score=5 1h=+4147.00% 5m=warming(0 samples) price=$0.0001047 priceSOL=0.000001010325 liq=0 vol=1 src=dexscreener
+[2026-09-07T16:22:31.679Z] [POLICY] mode=watchOnly minScore=60 maxBuys=5 regime=consolidation size=1x health=75/100 (DEGRADED)
+[2026-09-07T16:22:31.682Z] [POLICY] watchOnly mode — scanning only, no entries this window
+[2026-09-07T16:22:31.682Z] [TA] OTC research=49 rec=HOLD consensus=mixed risk=low dataQuality=ok circuit=FILTER (mode=SHADOW)
+[2026-09-07T16:22:31.687Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:22:31.687Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:22:31.687Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:22:31.687Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:22:31.688Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:22:31.690Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:22:31.690Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:22:31.690Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:22:31.691Z] [ATLAS] ATLAS LLM agent bull returned
+[2026-09-07T16:22:31.691Z] [ATLAS] ATLAS LLM agent bear returned
+[2026-09-07T16:22:31.691Z] [ATLAS] ATLAS LLM agent risk returned
+[2026-09-07T16:22:31.691Z] [ATLAS] ATLAS LLM agent synthesis returned
+[2026-09-07T16:22:31.691Z] [ATLAS] LOOM research=38 rec=HOLD consensus=mixed risk=undefined dataQuality=ok V1=70 (mode=SHADOW)
+[2026-09-07T16:22:31.691Z] [ATLAS-PRED] id=P1788798151686-6XSB2W agent=technical dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798151686
+[2026-09-07T16:22:31.691Z] [ATLAS-PRED] id=P1788798151686-3IUHKC agent=momentum dir=bearish conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798151686
+[2026-09-07T16:22:31.691Z] [ATLAS-PRED] id=P1788798151686-WWD9KQ agent=volatility dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798151686
+[2026-09-07T16:22:31.691Z] [ATLAS-PRED] id=P1788798151686-HF7B3X agent=regime dir=bearish conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798151686
+[2026-09-07T16:22:31.692Z] [ATLAS-PRED] id=P1788798151686-BPORY0 agent=sentiment dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798151686
+[2026-09-07T16:22:31.692Z] [ATLAS-PRED] id=P1788798151686-D0VWVI agent=solana dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798151686
+[2026-09-07T16:22:31.692Z] [ATLAS-PRED] id=P1788798151686-3Z0892 agent=onchain dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798151686
+[2026-09-07T16:22:31.692Z] [ATLAS-PRED] id=P1788798151686-SVHIRA agent=manipulation dir=neutral conf=0 mint=CB1YQfUzgsnaCd93cZLdiX1uASW7utWBaYMUsvcwNUBV ts=1788798151686
+[2026-09-07T16:22:31.692Z] [ATLAS-PRED] id=P1788798151686-D7QYIW agent=technical dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798151686
+[2026-09-07T16:22:31.692Z] [ATLAS-PRED] id=P1788798151686-OXPDTS agent=momentum dir=bullish conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798151686
+[2026-09-07T16:22:31.692Z] [ATLAS-PRED] id=P1788798151686-C7AEGS agent=volatility dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798151686
+[2026-09-07T16:22:31.692Z] [ATLAS-PRED] id=P1788798151686-7GYCPA agent=regime dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798151686
+[2026-09-07T16:22:31.692Z] [ATLAS-PRED] id=P1788798151686-IX0DMQ agent=sentiment dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798151686
+[2026-09-07T16:22:31.692Z] [ATLAS-PRED] id=P1788798151686-HS7GT2 agent=solana dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798151686
+[2026-09-07T16:22:31.692Z] [ATLAS-PRED] id=P1788798151686-PRALRC agent=onchain dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798151686
+[2026-09-07T16:22:31.692Z] [ATLAS-PRED] id=P1788798151686-IWA2G2 agent=manipulation dir=neutral conf=0 mint=7Y7V1a4m2nWK7BMgbka5B4vR1pDvCK7yva3Hnrqkraze ts=1788798151686
+[2026-09-07T16:22:50.838Z] [HISTORY-SKIP] 11/34 token(s) had no usable price this cycle
+[2026-09-07T16:22:50.838Z] [SAMPLER] recorded 23 price sample(s)
+[2026-09-07T16:23:05.222Z] [HISTORY-SKIP] 11/34 token(s) had no usable price this cycle
+[2026-09-07T16:23:05.222Z] [SAMPLER] recorded 23 price sample(s)
+[2026-09-07T16:23:07.067Z] [SHUTDOWN] SIGTERM received — persisting state and stopping
+[2026-09-07T16:23:07.070Z] [SHUTDOWN] portfolio persisted, heartbeat=stopped, lock released — bye

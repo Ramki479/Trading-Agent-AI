@@ -1,0 +1,8 @@
+{
+  "decisionId": "DEC100-FEF7A63A0305",
+  "status": "CHECKPOINT_100_NOT_REACHED",
+  "evidenceClassification": "INSUFFICIENT_EVIDENCE",
+  "decision": null,
+  "automaticallyPromoted": false,
+  "humanDecisionRequired": true
+}

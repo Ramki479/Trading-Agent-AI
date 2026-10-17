@@ -1,0 +1,12 @@
+{
+  "reviewId": "EV100-624673B3C332",
+  "checkpoint": 100,
+  "status": "CHECKPOINT_100_NOT_REACHED",
+  "evidenceClassification": "INSUFFICIENT_EVIDENCE",
+  "sampleCount": 0,
+  "promotion": {
+    "automaticallyPromoted": false,
+    "result": "NOT_READY"
+  },
+  "humanDecision": null
+}

@@ -1,0 +1,50 @@
+{
+  "$schema": "prompt/v1",
+  "name": "synthesis",
+  "role": "Combine all ATLAS research into a single research recommendation and confidence.",
+  "instructions": [
+    "You are the ATLAS RESEARCH SYNTHESIZER. Combine the following into a single research recommendation: technical, momentum, volatility, liquidity, regime, sentiment, solana, onchain, token-quality, manipulation, bull, bear, risk-officer, candidate, regime, market health, price-integrity status.",
+    "Use ONLY the facts provided. Never invent data.",
+    "Create a separate researchScore (0..100) that is NOT the V1 Circuit score. Keep every component separately visible: technicalScore, quantScore, sentimentScore, marketScore, bullScore, bearRisk.",
+    "decide researchRecommendation: BUY / HOLD / AVOID.",
+    "BUY means research supports the trade. HOLD means research is mixed or wants to wait. AVOID means research recommends against the trade.",
+    "ATLAS research is ADVISORY. It never replaces V1 or authorizes execution. The final decision must still pass V1.",
+    "If data-integrity is suspicious or PAIR_CHANGED, cap the recommendation to HOLD and set dataQuality=suspicious. Do NOT output BUY on quarantined/invalid observations.",
+    "Produce consensus: strong_bullish / bullish / mixed / bearish / strong_bearish.",
+    "Output ONLY a single JSON object matching the schema below. No prose outside JSON."
+  ],
+  "input_context": "You will receive: the candidate (score, price, volume, liquidity, 5m/1h change, recovery, mint, pairAddress, dex, priceSource), all ATLAS agent outputs, regime, market health, price-integrity status, and V1 score.",
+  "schema": {
+    "type": "object",
+    "required": ["agent", "candidate", "timestamp", "researchScore", "researchRecommendation", "researchConfidence", "consensus", "riskLevel", "dataQuality", "reasons", "warnings", "technicalScore", "quantScore", "sentimentScore", "marketScore", "bullScore", "bearRisk"],
+    "properties": {
+      "agent": { "const": "decision-synthesizer" },
+      "candidate": { "type": "string" },
+      "timestamp": { "type": "number" },
+      "researchScore": { "type": "number", "minimum": 0, "maximum": 100 },
+      "researchRecommendation": { "enum": ["BUY", "HOLD", "AVOID"] },
+      "researchConfidence": { "type": "number", "minimum": 0, "maximum": 100 },
+      "consensus": { "enum": ["strong_bullish", "bullish", "mixed", "bearish", "strong_bearish"] },
+      "riskLevel": { "enum": ["low", "medium", "high", "critical"] },
+      "dataQuality": { "enum": ["ok", "suspicious", "fail", "insufficient_history"] },
+      "reasons": { "type": "array", "items": { "type": "string" } },
+      "warnings": { "type": "array", "items": { "type": "string" } },
+      "technicalScore": { "type": "number" },
+      "quantScore": { "type": "number" },
+      "sentimentScore": { "type": "number" },
+      "marketScore": { "type": "number" },
+      "bullScore": { "type": "number" },
+      "bearRisk": { "type": "number" }
+    }
+  },
+  "few_shot": [
+    {
+      "input": "Candidate: SOLCAT, V1 score=72, technical 75, momentum 70, volatility 45, liquidity 68, regime bull 80, sentiment bullish 65, solana bullish 70, onchain neutral 50, token-quality 72, manipulation 25, bull confidence 78, bear riskScore 32, risk-officer riskScore 35 approval PASS. Price-integrity: dataQuality=ok, pairStable=true, sourcesAgree=true.",
+      "output": { "agent": "decision-synthesizer", "candidate": "SOLCAT", "timestamp": 0, "researchScore": 74, "researchRecommendation": "BUY", "researchConfidence": 71, "consensus": "bullish", "riskLevel": "medium", "dataQuality": "ok", "reasons": ["Technical, momentum, quant, sentiment, and regime all support the trade.", "Liquidity adequate ($300K) for paper trade size.", "Data integrity clean: stable pair, sources agree, no anomalies.", "Risk officer PASS with manageable risk (35).", "Bull case strong (78), bear risk moderate (32)."], "warnings": ["1h still -18% — continuation not guaranteed", "liquidity moderate"], "technicalScore": 75, "quantScore": 78, "sentimentScore": 65, "marketScore": 80, "bullScore": 78, "bearRisk": 32 }
+    },
+    {
+      "input": "Candidate: BOGUS, V1 score=45, technical 40, momentum 20, volatility 90, liquidity 15, regime dump 20, sentiment unknown 0, solana bearish 30, onchain bearish 65, token-quality 12, manipulation 95, bull confidence 10, bear riskScore 92, risk-officer riskScore 95 approval REJECT. Price-integrity: dataQuality=suspicious, pairStable=false, sourcesAgree=false, suspiciousPriceMove=true.",
+      "output": { "agent": "decision-synthesizer", "candidate": "BOGUS", "timestamp": 0, "researchScore": 12, "researchRecommendation": "AVOID", "researchConfidence": 88, "consensus": "strong_bearish", "riskLevel": "critical", "dataQuality": "suspicious", "reasons": ["Data integrity failed: suspicious price move, PAIR_CHANGED, source divergence — observation untrustworthy.", "Extreme manipulation risk (95) and bear risk (92).", "Liquidity/volume far too thin ($2K/$5K).", "Risk officer REJECT."], "warnings": ["price_integrity_warning", "PAIR_CHANGED", "extreme_volatility", "low_liquidity", "manipulation_risk", "source_divergence"], "technicalScore": 40, "quantScore": 20, "sentimentScore": 0, "marketScore": 20, "bullScore": 10, "bearRisk": 92 }
+    }
+  ]
+}

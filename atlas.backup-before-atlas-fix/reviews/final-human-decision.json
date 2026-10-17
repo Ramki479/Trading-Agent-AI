@@ -1,0 +1,20 @@
+{
+  "decisionId": "FINAL-97F7BC70CF24",
+  "phase": 15,
+  "status": "INSUFFICIENT_EVIDENCE",
+  "evidenceClassification": "INSUFFICIENT_EVIDENCE",
+  "datasetHash": "EMPTY",
+  "sampleCount": 0,
+  "recommendation": "CONTINUE_SHADOW",
+  "humanDecisionRequired": true,
+  "automaticallyPromoted": false,
+  "possibleDecisions": [
+    "CONTINUE_SHADOW",
+    "ACCEPT_ATLAS_FOR_FURTHER_REVIEW",
+    "REJECT_ATLAS",
+    "REQUEST_MORE_DATA",
+    "APPROVE_PRODUCTION_READINESS_REVIEW"
+  ],
+  "note": "Human review is mandatory. ATLAS remains SHADOW regardless of evidence classification.",
+  "createdAt": 1788785868429
+}
